@@ -82,21 +82,24 @@
           )
 
           content = content.replace(
-              "CODE_SIGN_STYLE = Automatic;",
-              "CODE_SIGN_STYLE = Manual;",
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";',
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";',
           )
 
-          if "PROVISIONING_PROFILE_SPECIFIER" in content:
-              content = re.sub(
-                  r'PROVISIONING_PROFILE_SPECIFIER = "[^"]*";',
-                  f'PROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
-                  content,
-              )
-          else:
-              content = content.replace(
-                  "PRODUCT_BUNDLE_IDENTIFIER = com.lokallyapp.motorista;",
-                  f'PRODUCT_BUNDLE_IDENTIFIER = com.lokallyapp.motorista;\nPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
-              )
+          content = content.replace(
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";',
+              '"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";',
+          )
+
+          content = re.sub(r'\n\s*CODE_SIGN_STYLE = [^;]+;', '', content)
+          content = re.sub(r'\n\s*CODE_SIGN_IDENTITY = "[^"]*";', '', content)
+          content = re.sub(r'\n\s*PROVISIONING_PROFILE_SPECIFIER = "[^"]*";', '', content)
+
+          content = re.sub(
+              r"(PRODUCT_BUNDLE_IDENTIFIER = com\.lokallyapp\.motorista;)",
+              rf'\1\nCODE_SIGN_STYLE = Manual;\nCODE_SIGN_IDENTITY = "Apple Distribution";\nPROVISIONING_PROFILE_SPECIFIER = "{profile_name}";',
+              content,
+          )
 
           project_file.write_text(content)
           PY
