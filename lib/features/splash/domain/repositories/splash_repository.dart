@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:get/get_connect/http/src/response/response.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
@@ -30,7 +30,7 @@ class SplashRepository implements SplashRepositoryInterface{
 
   @override
   Future<bool> removeSharedData() {
-    return sharedPreferences.clear();
+    return Future.value(true);
   }
 
   @override

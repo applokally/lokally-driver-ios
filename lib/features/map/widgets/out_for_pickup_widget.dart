@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
@@ -100,7 +100,7 @@ class _OutForPickupWidgetState extends State<OutForPickupWidget> {
                           Row(children: [
                             Expanded(
                                 child: ButtonWidget(
-                              buttonText: 'no_continue_trip'.tr,
+                              buttonText: 'Continuar corrida',
                               showBorder: true,
                               transparent: true,
                               backgroundColor: Theme.of(context).primaryColor,
@@ -115,7 +115,7 @@ class _OutForPickupWidgetState extends State<OutForPickupWidget> {
                             const SizedBox(width: Dimensions.paddingSizeSmall),
                             Expanded(
                                 child: ButtonWidget(
-                              buttonText: 'submit'.tr,
+                              buttonText: 'Cancelar corrida',
                               showBorder: true,
                               transparent: true,
                               textColor:
@@ -217,7 +217,7 @@ class _OutForPickupWidgetState extends State<OutForPickupWidget> {
                               expandableKey: widget.expandableKey),
                           const SizedBox(height: Dimensions.paddingSizeLarge),
                           ButtonWidget(
-                            buttonText: 'submit'.tr,
+                            buttonText: 'Cancelar corrida',
                             showBorder: true,
                             transparent: true,
                             backgroundColor: Theme.of(context).primaryColor,
@@ -817,3 +817,4 @@ String _paymentToolTipText(String whoPay, String paymentMethod) {
     return 'the_receiver_pay_the_bill'.tr;
   }
 }
+

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -74,7 +74,7 @@ class _RideOngoingWidgetState extends State<RideOngoingWidget> {
                             Row(children: [
                               Expanded(
                                   child: ButtonWidget(
-                                buttonText: 'no_continue_trip'.tr,
+                                buttonText: 'Continuar corrida',
                                 showBorder: true,
                                 transparent: true,
                                 backgroundColor: Theme.of(context).primaryColor,
@@ -90,7 +90,7 @@ class _RideOngoingWidgetState extends State<RideOngoingWidget> {
                                   width: Dimensions.paddingSizeSmall),
                               Expanded(
                                   child: ButtonWidget(
-                                buttonText: 'submit'.tr,
+                                buttonText: 'Cancelar corrida',
                                 showBorder: true,
                                 transparent: true,
                                 textColor: Get.isDarkMode
@@ -380,7 +380,7 @@ class _RideOngoingWidgetState extends State<RideOngoingWidget> {
                                     }
                                   }
                                 },
-                                buttonText: 'submit'.tr,
+                                buttonText: 'Cancelar corrida',
                                 radius: Dimensions.radiusExtraLarge,
                               )
                       ]),
@@ -697,3 +697,4 @@ class _OngoingTripWidget extends StatelessWidget {
     });
   }
 }
+

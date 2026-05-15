@@ -1,4 +1,4 @@
-
+﻿
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/confirmation_bottomsheet_widget.dart';
@@ -8,6 +8,7 @@ import 'package:ride_sharing_user_app/features/refer_and_earn/screens/refer_and_
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/features/safety_setup/screens/safety_setup_screen.dart';
 import 'package:ride_sharing_user_app/features/wallet/screens/payment_info_screen.dart';
+import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
@@ -70,7 +71,11 @@ class _ProfileMenuScreenState extends State<ProfileMenuScreen> {
           ),
 
           ProfileMenuItem(icon: Images.leaderBoardIcon, title: 'add_withdraw_info',
-            onTap: ()=> Get.to(()=> const PaymentInfoScreen()),
+            onTap: () {
+          Get.find<WalletController>().getWithdrawMethodInfoList(1);
+          Get.find<WalletController>().getWithdrawMethods();
+          Get.to(() => const PaymentInfoScreen());
+        },
           ),
 
           ProfileMenuItem(icon: Images.helpAndSupportIcon, title: 'help_and_support',
@@ -174,3 +179,4 @@ class ProfileMenuItem extends StatelessWidget {
     );
   }
 }
+

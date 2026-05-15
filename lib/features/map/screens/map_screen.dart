@@ -51,6 +51,45 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Marker? marker;
   LatLng? _driverCurrentLatLng;
   bool _isTryingToLoadLocation = false;
+  bool _isAutoOpeningRideRequestScreen = false;
+  DateTime? _lastRideRequestAutoOpenAt;
+  int _lastRideRequestAutoOpenCount = 0;
+
+  void _openRideRequestScreenAutomatically(int totalRequests) {
+    if (totalRequests <= 0) {
+      return;
+    }
+
+    if (_isAutoOpeningRideRequestScreen || Get.currentRoute == '/RideRequestScreen') {
+      return;
+    }
+
+    final DateTime now = DateTime.now();
+
+    if (_lastRideRequestAutoOpenCount == totalRequests &&
+        _lastRideRequestAutoOpenAt != null &&
+        now.difference(_lastRideRequestAutoOpenAt!).inSeconds < 8) {
+      return;
+    }
+
+    _isAutoOpeningRideRequestScreen = true;
+    _lastRideRequestAutoOpenCount = totalRequests;
+    _lastRideRequestAutoOpenAt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted) {
+          return;
+        }
+
+        if (Get.currentRoute != '/RideRequestScreen') {
+          await Get.to(() => const RideRequestScreen());
+        }
+      } finally {
+        _isAutoOpeningRideRequestScreen = false;
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -535,82 +574,64 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                       },
                     ),
                     persistentHeader: SizedBox(
-                      height: 76,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Dimensions.paddingSizeDefault,
-                          vertical: Dimensions.paddingSizeSmall,
-                        ),
-                        child: GetBuilder<RideController>(
-                          builder: (rideController) {
-                            final int totalRequests =
-                                rideController.pendingRideRequestModel?.totalSize ?? 0;
+                      height: 50,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: GetBuilder<RideController>(
+                              builder: (rideController) {
+                                final int totalRequests = rideController
+                                        .pendingRideRequestModel?.totalSize ??
+                                    0;
 
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(
-                                Dimensions.paddingSizeExtraLarge,
-                              ),
-                              onTap: () => Get.to(() => const RideRequestScreen()),
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: totalRequests > 0
-                                      ? Theme.of(context).primaryColor
-                                      : Theme.of(context).disabledColor.withOpacity(0.35),
-                                  borderRadius: BorderRadius.circular(
-                                    Dimensions.paddingSizeExtraLarge,
-                                  ),
-                                  boxShadow: totalRequests > 0
-                                      ? [
-                                          BoxShadow(
-                                            color: Theme.of(context)
-                                                .primaryColor
-                                                .withOpacity(0.24),
-                                            blurRadius: 14,
-                                            offset: const Offset(0, 6),
+                                _openRideRequestScreenAutomatically(totalRequests);
+
+                                return InkWell(
+                                  onTap: () =>
+                                      Get.to(() => const RideRequestScreen()),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor,
+                                      borderRadius: BorderRadius.circular(
+                                        Dimensions.paddingSizeExtraLarge,
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal:
+                                            Dimensions.paddingSizeDefault,
+                                        vertical: Dimensions.paddingSizeSmall,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            height: Dimensions.iconSizeSmall,
+                                            child:
+                                                Image.asset(Images.reqListIcon),
                                           ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: Dimensions.paddingSizeDefault,
-                                    vertical: Dimensions.paddingSizeSmall,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        height: Dimensions.iconSizeMedium,
-                                        child: Image.asset(Images.reqListIcon),
-                                      ),
-                                      const SizedBox(
-                                        width: Dimensions.paddingSizeSmall,
-                                      ),
-                                      Flexible(
-                                        child: Text(
-                                          totalRequests > 0
-                                              ? 'Ver solicitaÃ§Ãµes ($totalRequests)'
-                                              : 'Nenhuma solicitaÃ§Ã£o agora',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          style: textRegular.copyWith(
-                                            color: totalRequests > 0
-                                                ? Colors.white
-                                                : Theme.of(context).hintColor,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: Dimensions.fontSizeDefault,
+                                          const SizedBox(
+                                            width: Dimensions.paddingSizeSmall,
                                           ),
-                                        ),
+                                          Text(
+                                            '$totalRequests ${'more_request'.tr}',
+                                            style: textRegular.copyWith(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     expandableContent: Builder(
@@ -697,3 +718,4 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         Get.find<RideController>().tripDetail?.driverLocationUrl != null;
   }
 }
+

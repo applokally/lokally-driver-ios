@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -175,7 +175,7 @@ class ReferralDetailsScreen extends StatelessWidget {
             ButtonWidget(
                 onPressed: (){
                   final params = ShareParams(text: 'Greetings, \n ${Get.find<SplashController>().config?.businessName} is the best ride share & parcel delivery platform in the country.'
-                      ' If you are new to this don’t forget to use \n "${referAndEarnController.referralDetails?.data?.referralCode ?? ''}" \n as the referral code while sign up into ${Get.find<SplashController>().config?.businessName} & you will get rewarded.'
+                      'Use meu código de indicação "${referAndEarnController.referralDetails?.data?.referralCode ?? ''}" ao se cadastrar na ${Get.find<SplashController>().config?.businessName} e aproveite os benefícios.'
                       '\n\n ${AppConstants.baseUrl}');
 
                   SharePlus.instance.share(params);
@@ -219,3 +219,4 @@ class ReferralDetailsScreen extends StatelessWidget {
     );
   }
 }
+
