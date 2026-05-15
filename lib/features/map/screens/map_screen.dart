@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -307,15 +307,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                       builder: (rideController) {
                         return Stack(
                           children: [
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: riderMapController.sheetHeight -
-                                    (Get.find<RiderMapController>()
-                                                .currentRideState ==
-                                            RideState.initial
-                                        ? 80
-                                        : 20),
-                              ),
+                            Positioned.fill(
+                              bottom: (riderMapController.sheetHeight -
+                                      (Get.find<RiderMapController>()
+                                                  .currentRideState ==
+                                              RideState.initial
+                                          ? 80
+                                          : 20))
+                                  .clamp(0.0, Get.height * 0.72),
                               child: GoogleMap(
                                 style: Get.isDarkMode
                                     ? Get.find<ThemeController>().darkMap
@@ -718,4 +717,3 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         Get.find<RideController>().tripDetail?.driverLocationUrl != null;
   }
 }
-

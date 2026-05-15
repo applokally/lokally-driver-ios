@@ -239,6 +239,23 @@ class RideController extends GetxController implements GetxService{
 
         Get.find<OtpTimeCountController>().initialCounter();
 
+        await getRideDetails(tripId);
+
+        if (tripDetail != null) {
+          if (tripDetail?.currentStatus == 'out_for_pickup') {
+            Get.find<RiderMapController>().setRideCurrentState(RideState.outForPickup);
+          } else {
+            Get.find<RiderMapController>().setRideCurrentState(RideState.accepted);
+          }
+
+          Get.find<RiderMapController>().setMarkersInitialPosition();
+          remainingDistance(tripId, mapBound: true);
+        }
+
+        if (Get.currentRoute == '/RideRequestScreen') {
+          Get.back();
+        }
+
       }
 
     }else{
