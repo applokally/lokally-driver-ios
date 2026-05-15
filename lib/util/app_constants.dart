@@ -4,7 +4,7 @@ import 'package:ride_sharing_user_app/util/images.dart';
 class AppConstants {
   static const String appName = 'Lokally Driver';
   static const String baseUrl = 'https://admlokally.online';
-  static const String polylineMapKey = 'YOUR_MAP_KEY_HERE';
+  static const String polylineMapKey = 'AIzaSyDslzVLtnZEeLjNfsD08dYHTeUkyhgj41Y';
   static const double appVersion = 3.1;
 
   /// Flutter SDK 3.41.4

@@ -42,7 +42,11 @@ import 'package:ride_sharing_user_app/features/trip/screens/review_this_customer
 class NotificationHelper {
   static Future<void> initialize(FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin) async {
     AndroidInitializationSettings androidInitialize = const AndroidInitializationSettings('notification_icon');
-    var iOSInitialize = const DarwinInitializationSettings();
+    var iOSInitialize = const DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     var initializationsSettings = InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
     flutterLocalNotificationsPlugin.initialize(
       settings: initializationsSettings,
@@ -70,7 +74,11 @@ class NotificationHelper {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       AndroidInitializationSettings androidInitialize = const AndroidInitializationSettings('notification_icon');
-      var iOSInitialize = const DarwinInitializationSettings();
+      var iOSInitialize = const DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
       var initializationsSettings = InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
       flutterLocalNotificationsPlugin.initialize(
         settings: initializationsSettings,
@@ -94,12 +102,13 @@ class NotificationHelper {
           Get.find<SplashController>().config!.maintenanceMode!.maintenanceStatus == 1 &&
           Get.find<SplashController>().config!.maintenanceMode!.selectedMaintenanceSystem!.driverApp == 1) || Get.find<SplashController>().haveOngoingRides()){
 
-        ///Check webSocket connection
-        if (Get.find<SplashController>().pusherConnectionStatus == null || Get.find<SplashController>().pusherConnectionStatus == 'Disconnected') {
-          if (message.data['action'] == "new_ride_request" || message.data['action'] == "new_parcel_request") {
-            _whenNewRequestFound(message);
+        final String action = '${message.data['action'] ?? ''}';
 
-          } else if(message.data['action'] == "new_message"){
+        if (action == "new_ride_request" || action == "new_parcel_request") {
+          _whenNewRequestFound(message);
+
+        } else if (Get.find<SplashController>().pusherConnectionStatus == null || Get.find<SplashController>().pusherConnectionStatus == 'Disconnected') {
+          if(message.data['action'] == "new_message"){
             Get.find<ChatController>().getConversation(message.data['type'], 1);
 
           } else if (message.data['action'] == "trip_completed") {
@@ -305,7 +314,15 @@ class NotificationHelper {
       priority: Priority.max,
       sound: RawResourceAndroidNotificationSound('notification'),
     );
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
     await fln.show(id: 0, title: title, body: body, notificationDetails: platformChannelSpecifics, payload: action);
   }
 
@@ -366,7 +383,15 @@ class NotificationHelper {
       styleInformation: largeIconPath != null ? bigPictureStyleInformation : bigTextStyleInformation,
       sound: const RawResourceAndroidNotificationSound('notification'),
     );
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
     await fln.show(id: 0, title: title, body: body, notificationDetails: platformChannelSpecifics, payload: orderID);
   }
 
@@ -617,7 +642,7 @@ Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async
  void _whenNewRequestFound(RemoteMessage message){
    Get.find<RideController>().ongoingTripList().then((value){
      if((Get.find<RideController>().ongoingTrip ?? []).isEmpty){
-       Get.find<RideController>().getPendingRideRequestList(1);
+       Get.find<RideController>().getPendingRideRequestList(1, limit: 100);
        AudioPlayer audio = AudioPlayer();
        audio.play(AssetSource('notification.wav'));
        Get.find<RideController>().setRideId(message.data['ride_request_id']);
@@ -626,7 +651,12 @@ Future<dynamic> myBackgroundMessageReceiver(NotificationResponse response) async
            Get.find<RiderMapController>().getPickupToDestinationPolyline();
            Get.find<RiderMapController>().setRideCurrentState(RideState.pending);
            Get.find<RideController>().updateRoute(false, notify: true);
-           Get.to(() => const MapScreen());
+
+           if(Get.currentRoute != '/RideRequestScreen'){
+             Get.to(() => const RideRequestScreen());
+           }else{
+             Get.find<RideController>().getPendingRideRequestList(1, limit: 100);
+           }
          }
        });
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
@@ -90,40 +92,128 @@ class AuthRepository implements AuthRepositoryInterface {
 
 
   String? deviceToken;
+  StreamSubscription<String>? _tokenRefreshSubscription;
+
   @override
   Future<Response?> updateToken() async {
-    if (GetPlatform.isIOS) {
-      FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
-      NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
-        alert: true, announcement: false, badge: true, carPlay: false,
-        criticalAlert: false, provisional: false, sound: true,
-      );
-      if(settings.authorizationStatus == AuthorizationStatus.authorized) {
-        deviceToken = await _saveDeviceToken();
-      }
-    }else {
-      deviceToken = await _saveDeviceToken();
-      saveDeviceToken();
+    await _prepareFirebaseMessaging();
+
+    deviceToken = await _resolveDeviceToken();
+    await saveDeviceToken();
+
+    if (!GetPlatform.isWeb) {
+      await FirebaseMessaging.instance.subscribeToTopic(AppConstants.topic);
     }
-    if(!GetPlatform.isWeb){
-      FirebaseMessaging.instance.subscribeToTopic(AppConstants.topic);
-    }
-    return await apiClient.postData(AppConstants.fcmTokenUpdate, {"_method": "put", "fcm_token": deviceToken});
+
+    _listenTokenRefresh();
+
+    return await apiClient.postData(
+      AppConstants.fcmTokenUpdate,
+      {
+        "_method": "put",
+        "fcm_token": _isValidDeviceToken(deviceToken) ? deviceToken : '',
+      },
+    );
   }
 
-  Future<String?> _saveDeviceToken() async {
-    String? deviceToken = '@';
-    try {
-      deviceToken = await FirebaseMessaging.instance.getToken();
-    }catch(e) {
-      debugPrint('');
+  Future<void> _prepareFirebaseMessaging() async {
+    if (GetPlatform.isWeb) {
+      return;
     }
-    if (deviceToken != null) {
-      if (kDebugMode) {
-        print('--------Device Token---------- $deviceToken');
+
+    await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+  }
+
+  Future<String?> _resolveDeviceToken() async {
+    if (GetPlatform.isIOS) {
+      await _waitForApnsToken();
+    }
+
+    for (int attempt = 0; attempt < 5; attempt++) {
+      try {
+        final String? token = await FirebaseMessaging.instance.getToken();
+
+        if (_isValidDeviceToken(token)) {
+          if (kDebugMode) {
+            print('--------Driver FCM Token---------- $token');
+          }
+
+          return token;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Driver FCM token error: $e');
+        }
       }
+
+      await Future<void>.delayed(const Duration(seconds: 2));
     }
-    return deviceToken;
+
+    return null;
+  }
+
+  Future<void> _waitForApnsToken() async {
+    for (int attempt = 0; attempt < 8; attempt++) {
+      try {
+        final String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+        if (_isValidDeviceToken(apnsToken)) {
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Driver APNs token error: $e');
+        }
+      }
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+  }
+
+  void _listenTokenRefresh() {
+    _tokenRefreshSubscription ??= FirebaseMessaging.instance.onTokenRefresh.listen(
+      (String refreshedToken) async {
+        if (!_isValidDeviceToken(refreshedToken)) {
+          return;
+        }
+
+        deviceToken = refreshedToken;
+        await saveDeviceToken();
+
+        await apiClient.postData(
+          AppConstants.fcmTokenUpdate,
+          {
+            "_method": "put",
+            "fcm_token": refreshedToken,
+          },
+        );
+      },
+    );
+  }
+
+  bool _isValidDeviceToken(String? token) {
+    if (token == null) {
+      return false;
+    }
+
+    final String value = token.trim();
+
+    return value.isNotEmpty && value != '@' && value.toLowerCase() != 'null';
   }
 
   @override

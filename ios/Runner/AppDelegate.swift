@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import GoogleMaps
+import UserNotifications
 import flutter_downloader
 
 
@@ -10,9 +11,9 @@ import flutter_downloader
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMSServices.provideAPIKey("YOUR_MAP_KEY_HERE")
+    GMSServices.provideAPIKey("AIzaSyDslzVLtnZEeLjNfsD08dYHTeUkyhgj41Y")
     if #available(iOS 10.0, *) {
-        UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+        UNUserNotificationCenter.current().delegate = self
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
