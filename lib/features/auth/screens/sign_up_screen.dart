@@ -27,6 +27,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'https://admlokally.online/api/driver/config/lokally-billing-zone-rules';
 
   final TextEditingController cityController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _cityFocusNode = FocusNode();
+  final GlobalKey _citySelectorKey = GlobalKey();
+  final GlobalKey _serviceSectionKey = GlobalKey();
+
   final GetConnect _getConnect =
       GetConnect(timeout: const Duration(seconds: 12));
 
@@ -50,6 +55,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   void dispose() {
     cityController.dispose();
+    _scrollController.dispose();
+    _cityFocusNode.dispose();
     super.dispose();
   }
 
@@ -145,6 +152,46 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _filteredCitySuggestions.isEmpty;
   }
 
+  void _ensureCitySelectorVisible() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final BuildContext? selectorContext = _citySelectorKey.currentContext;
+
+      if (selectorContext == null) {
+        return;
+      }
+
+      Scrollable.ensureVisible(
+        selectorContext,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    });
+  }
+
+  void _ensureServiceSectionVisible() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 180));
+
+      if (!mounted) return;
+
+      final BuildContext? serviceContext = _serviceSectionKey.currentContext;
+
+      if (serviceContext == null) {
+        return;
+      }
+
+      Scrollable.ensureVisible(
+        serviceContext,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    });
+  }
+
   void _syncSelectedCityWithInput() {
     final String normalizedInput = _normalizeSearch(cityController.text);
     _LokallyBillingZoneRule? exactMatch;
@@ -162,15 +209,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _isRideShareSelected = false;
       _isParcelDeliverySelected = false;
     });
+
+    if (exactMatch != null) {
+      _cityFocusNode.unfocus();
+      _ensureServiceSectionVisible();
+    }
   }
 
   void _onCityChanged(String value) {
     _cityQuery = value;
     _syncSelectedCityWithInput();
+
+    if (value.trim().isNotEmpty && _selectedBillingZoneRule == null) {
+      _ensureCitySelectorVisible();
+    }
+  }
+
+  void _onCitySubmitted(String value) {
+    if (_selectedBillingZoneRule != null) {
+      _cityFocusNode.unfocus();
+      _ensureServiceSectionVisible();
+      return;
+    }
+
+    final List<_LokallyBillingZoneRule> suggestions = _filteredCitySuggestions;
+
+    if (suggestions.length == 1) {
+      _selectCity(suggestions.first);
+      return;
+    }
+
+    if (suggestions.isNotEmpty) {
+      _ensureCitySelectorVisible();
+      showCustomSnackBar('Toque na cidade atendida para selecionar.');
+      return;
+    }
+
+    if (value.trim().isNotEmpty) {
+      showCustomSnackBar('Selecione uma cidade atendida pela Lokally.');
+    }
   }
 
   void _selectCity(_LokallyBillingZoneRule rule) {
     cityController.text = rule.zoneName;
+    cityController.selection = TextSelection.collapsed(
+      offset: cityController.text.length,
+    );
 
     setState(() {
       _cityQuery = rule.zoneName;
@@ -179,6 +263,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _isRideShareSelected = false;
       _isParcelDeliverySelected = false;
     });
+
+    _cityFocusNode.unfocus();
+    _ensureServiceSectionVisible();
   }
 
   void _toggleRideShare() {
@@ -250,6 +337,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (_selectedBillingZoneRule == null) {
       showCustomSnackBar('Selecione uma cidade atendida pela Lokally.');
+      _cityFocusNode.requestFocus();
+      _ensureCitySelectorVisible();
       return;
     }
 
@@ -257,6 +346,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showCustomSnackBar(
         'Escolha transportar passageiros, entregas ou os dois.',
       );
+      _cityFocusNode.unfocus();
+      _ensureServiceSectionVisible();
       return;
     }
 
@@ -265,6 +356,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!onlyParcelDelivery && _selectedPartnershipModel == null) {
       showCustomSnackBar('Selecione o modelo de parceria.');
+      _cityFocusNode.unfocus();
       return;
     }
 
@@ -276,8 +368,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+    final double scrollBottomPadding =
+        keyboardVisible ? 210 : Dimensions.paddingSizeLarge;
+
     return SafeArea(
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         backgroundColor: Theme.of(context).cardColor,
         body: GetBuilder<AuthController>(
           builder: (authController) {
@@ -298,12 +395,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
+                    controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         Dimensions.paddingSizeLarge,
                         Dimensions.paddingSizeDefault,
                         Dimensions.paddingSizeLarge,
-                        Dimensions.paddingSizeLarge,
+                        scrollBottomPadding,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -372,64 +472,77 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const SizedBox(height: 22),
-                          _LokallyCitySelector(
-                            controller: cityController,
-                            isLoading: _isLoadingBillingRules,
-                            hasError: _hasBillingRulesError,
-                            selectedRule: _selectedBillingZoneRule,
-                            suggestions: _filteredCitySuggestions,
-                            showUnavailableMessage:
-                                _shouldShowUnavailableCityMessage,
-                            onChanged: _onCityChanged,
-                            onRetry: _loadBillingZoneRules,
-                            onSelectCity: _selectCity,
+                          KeyedSubtree(
+                            key: _citySelectorKey,
+                            child: _LokallyCitySelector(
+                              controller: cityController,
+                              focusNode: _cityFocusNode,
+                              isLoading: _isLoadingBillingRules,
+                              hasError: _hasBillingRulesError,
+                              selectedRule: _selectedBillingZoneRule,
+                              suggestions: _filteredCitySuggestions,
+                              showUnavailableMessage:
+                                  _shouldShowUnavailableCityMessage,
+                              onChanged: _onCityChanged,
+                              onSubmitted: _onCitySubmitted,
+                              onRetry: _loadBillingZoneRules,
+                              onSelectCity: _selectCity,
+                            ),
                           ),
                           if (hasSelectedCity) ...[
                             const SizedBox(height: 30),
-                            Text(
-                              'choose_service'.tr,
-                              textAlign: TextAlign.center,
-                              style: textBold.copyWith(
-                                fontSize: 25,
-                                height: 1.18,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
-                                    ?.color,
+                            KeyedSubtree(
+                              key: _serviceSectionKey,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'choose_service'.tr,
+                                    textAlign: TextAlign.center,
+                                    style: textBold.copyWith(
+                                      fontSize: 25,
+                                      height: 1.18,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.color,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      'Escolha transportar passageiros, entregas ou os dois.',
+                                      textAlign: TextAlign.center,
+                                      style: textMedium.copyWith(
+                                        fontSize: 14.8,
+                                        height: 1.45,
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.color
+                                            ?.withValues(alpha: 0.82),
+                                      ),
+                                      maxLines: 3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 30),
+                                  _LokallyServiceOptionCard(
+                                    title: 'ride_share'.tr,
+                                    subtitle: 'service_provide_text1'.tr,
+                                    selected: _isRideShareSelected,
+                                    onChanged: _toggleRideShare,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _LokallyServiceOptionCard(
+                                    title: 'parcel_delivery'.tr,
+                                    subtitle: 'service_provide_text2'.tr,
+                                    selected: _isParcelDeliverySelected,
+                                    onChanged: _toggleParcelDelivery,
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                'Escolha transportar passageiros, entregas ou os dois.',
-                                textAlign: TextAlign.center,
-                                style: textMedium.copyWith(
-                                  fontSize: 14.8,
-                                  height: 1.45,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.color
-                                      ?.withValues(alpha: 0.82),
-                                ),
-                                maxLines: 3,
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            _LokallyServiceOptionCard(
-                              title: 'ride_share'.tr,
-                              subtitle: 'service_provide_text1'.tr,
-                              selected: _isRideShareSelected,
-                              onChanged: _toggleRideShare,
-                            ),
-                            const SizedBox(height: 16),
-                            _LokallyServiceOptionCard(
-                              title: 'parcel_delivery'.tr,
-                              subtitle: 'service_provide_text2'.tr,
-                              selected: _isParcelDeliverySelected,
-                              onChanged: _toggleParcelDelivery,
                             ),
                           ],
                           if (showPartnershipSection &&
@@ -459,36 +572,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            Theme.of(context).hintColor.withValues(alpha: 0.15),
-                        blurRadius: 10,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(Dimensions.paddingSizeLarge),
-                      topLeft: Radius.circular(Dimensions.paddingSizeLarge),
-                    ),
-                    color: Theme.of(context).cardColor,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: Dimensions.paddingSizeSmall,
-                    horizontal: Dimensions.paddingSizeExtraSmall,
-                  ).copyWith(
-                    bottom: Dimensions.paddingSizeExtraLarge,
-                  ),
-                  child: ButtonWidget(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: Dimensions.paddingSizeDefault,
-                    ),
-                    radius: Dimensions.radiusExtraLarge,
-                    buttonText: 'next'.tr,
-                    onPressed: () => _validateAndContinue(authController),
-                  ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: keyboardVisible
+                      ? const SizedBox.shrink(
+                          key: ValueKey<String>('keyboard-open-no-button'),
+                        )
+                      : Container(
+                          key: const ValueKey<String>('keyboard-closed-button'),
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .hintColor
+                                    .withValues(alpha: 0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, -4),
+                              ),
+                            ],
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(
+                                Dimensions.paddingSizeLarge,
+                              ),
+                              topLeft: Radius.circular(
+                                Dimensions.paddingSizeLarge,
+                              ),
+                            ),
+                            color: Theme.of(context).cardColor,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: Dimensions.paddingSizeSmall,
+                            horizontal: Dimensions.paddingSizeExtraSmall,
+                          ).copyWith(
+                            bottom: Dimensions.paddingSizeExtraLarge,
+                          ),
+                          child: ButtonWidget(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: Dimensions.paddingSizeDefault,
+                            ),
+                            radius: Dimensions.radiusExtraLarge,
+                            buttonText: 'next'.tr,
+                            onPressed: () =>
+                                _validateAndContinue(authController),
+                          ),
+                        ),
                 ),
               ],
             );
@@ -550,23 +679,27 @@ class _LokallyBillingZoneRule {
 
 class _LokallyCitySelector extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool isLoading;
   final bool hasError;
   final _LokallyBillingZoneRule? selectedRule;
   final List<_LokallyBillingZoneRule> suggestions;
   final bool showUnavailableMessage;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
   final VoidCallback onRetry;
   final ValueChanged<_LokallyBillingZoneRule> onSelectCity;
 
   const _LokallyCitySelector({
     required this.controller,
+    required this.focusNode,
     required this.isLoading,
     required this.hasError,
     required this.selectedRule,
     required this.suggestions,
     required this.showUnavailableMessage,
     required this.onChanged,
+    required this.onSubmitted,
     required this.onRetry,
     required this.onSelectCity,
   });
@@ -582,7 +715,9 @@ class _LokallyCitySelector extends StatelessWidget {
       children: [
         TextField(
           controller: controller,
+          focusNode: focusNode,
           onChanged: onChanged,
+          onSubmitted: onSubmitted,
           enabled: !isLoading,
           textInputAction: TextInputAction.search,
           style: textMedium.copyWith(
@@ -655,6 +790,12 @@ class _LokallyCitySelector extends StatelessWidget {
           ),
         ],
         if (suggestions.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          _LokallyStatusMessage(
+            message: 'Toque em uma cidade abaixo para selecionar.',
+            icon: Icons.touch_app_outlined,
+            strong: true,
+          ),
           const SizedBox(height: 10),
           ...suggestions.map(
             (rule) => _LokallyCitySuggestionCard(
