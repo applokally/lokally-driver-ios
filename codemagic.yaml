@@ -1,6 +1,6 @@
 ﻿workflows:
   lokally-driver-ios-testflight:
-    name: Lokally Driver iOS TestFlight
+    name: Lokally Driver iOS App Store
     max_build_duration: 120
     instance_type: mac_mini_m2
 
@@ -120,8 +120,6 @@
               <key>com.lokallyapp.motorista</key>
               <string>$PROFILE_NAME</string>
             </dict>
-            <key>testFlightInternalTestingOnly</key>
-            <true/>
           </dict>
           </plist>
           EOF
