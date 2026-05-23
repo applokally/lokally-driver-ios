@@ -12,6 +12,18 @@ class TripDetailsModel {
   }
 }
 
+double? _toNullableDouble(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value is num) {
+    return value.toDouble();
+  }
+
+  return double.tryParse(value.toString());
+}
+
 class TripDetail {
   String? id;
   String? refId;
@@ -47,6 +59,10 @@ class TripDetail {
   String? lokallyPaymentMethodLabel;
   double? couponAmount;
   double? discountAmount;
+  String? lokallyPointsVoucherId;
+  String? lokallyPointsVoucherCode;
+  double? lokallyPointsVoucherAmount;
+  String? lokallyPointsVoucherStatus;
   String? note;
   String? totalFare;
   String? otp;
@@ -184,6 +200,10 @@ class TripDetail {
       this.lokallyPaymentMethodLabel,
       this.couponAmount,
       this.discountAmount,
+      this.lokallyPointsVoucherId,
+      this.lokallyPointsVoucherCode,
+      this.lokallyPointsVoucherAmount,
+      this.lokallyPointsVoucherStatus,
       this.note,
       this.totalFare,
       this.otp,
@@ -316,6 +336,12 @@ class TripDetail {
         discountAmount = double.parse(json['discount_amount'].toString());
       }
     }
+    lokallyPointsVoucherId = json['lokally_points_voucher_id']?.toString();
+    lokallyPointsVoucherCode = json['lokally_points_voucher_code']?.toString();
+    lokallyPointsVoucherAmount =
+        _toNullableDouble(json['lokally_points_voucher_amount']) ?? 0;
+    lokallyPointsVoucherStatus =
+        json['lokally_points_voucher_status']?.toString();
     note = json['note'];
     totalFare = json['total_fare'].toString();
     otp = json['otp'];

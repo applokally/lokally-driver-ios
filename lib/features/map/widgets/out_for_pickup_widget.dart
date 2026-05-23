@@ -793,9 +793,14 @@ class _FareDetailsWidgetState extends State<_FareDetailsWidget> {
                 ),
               )
           ])),
-          Text(
-            paymentMethodLabel,
-            style: TextStyle(color: Theme.of(context).primaryColor),
+          Flexible(
+            child: Text(
+              paymentMethodLabel,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(color: Theme.of(context).primaryColor),
+            ),
           )
         ]),
       ]),
@@ -817,4 +822,3 @@ String _paymentToolTipText(String whoPay, String paymentMethod) {
     return 'the_receiver_pay_the_bill'.tr;
   }
 }
-

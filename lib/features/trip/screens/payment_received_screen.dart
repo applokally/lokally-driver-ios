@@ -59,6 +59,138 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
     super.dispose();
   }
 
+  double _safeDouble(dynamic value) {
+    if (value == null) {
+      return 0;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  double _originalFareAmount(dynamic finalFare) {
+    final double paidFare = _safeDouble(finalFare?.paidFare);
+    final double couponAmount = _safeDouble(finalFare?.couponAmount);
+    final double discountAmount = _safeDouble(finalFare?.discountAmount);
+    final double baseFare = _safeDouble(finalFare?.distanceWiseFare) +
+        _safeDouble(finalFare?.idleFee) +
+        _safeDouble(finalFare?.delayFee) +
+        _safeDouble(finalFare?.cancellationFee) +
+        _safeDouble(finalFare?.tips);
+
+    final double discountedOriginal = paidFare + couponAmount + discountAmount;
+
+    if (baseFare > discountedOriginal) {
+      return baseFare;
+    }
+
+    return discountedOriginal;
+  }
+
+  Widget _amountRow({
+    required BuildContext context,
+    required String title,
+    required double amount,
+    required Color color,
+    bool strikeThrough = false,
+    bool bold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Dimensions.paddingSizeExtraSmall),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: (bold ? textSemiBold : textRegular).copyWith(
+                color: color,
+                fontSize: bold
+                    ? Dimensions.fontSizeDefault
+                    : Dimensions.fontSizeSmall,
+              ),
+            ),
+          ),
+          const SizedBox(width: Dimensions.paddingSizeSmall),
+          Text(
+            PriceConverter.convertPrice(context, amount),
+            textAlign: TextAlign.end,
+            style: textRobotoBold.copyWith(
+              color: color,
+              fontSize:
+                  bold ? Dimensions.fontSizeLarge : Dimensions.fontSizeDefault,
+              decoration: strikeThrough
+                  ? TextDecoration.lineThrough
+                  : TextDecoration.none,
+              decorationColor: color,
+              decorationThickness: 1.8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _finalChargeHighlight({
+    required BuildContext context,
+    required double originalAmount,
+    required double finalAmount,
+    required bool isLokallyPayPayment,
+  }) {
+    final double discountAmount =
+        (originalAmount - finalAmount) > 0 ? originalAmount - finalAmount : 0;
+
+    return Container(
+      margin: const EdgeInsets.only(
+        top: Dimensions.paddingSizeSmall,
+        left: Dimensions.paddingSizeSmall,
+        right: Dimensions.paddingSizeSmall,
+      ),
+      padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
+        children: [
+          _amountRow(
+            context: context,
+            title: 'Valor da tarifa',
+            amount: originalAmount,
+            color: Colors.red.shade600,
+            strikeThrough: true,
+          ),
+          if (discountAmount > 0)
+            _amountRow(
+              context: context,
+              title: 'Desconto aplicado',
+              amount: discountAmount,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          Divider(
+            color: Theme.of(context).hintColor.withValues(alpha: 0.16),
+          ),
+          _amountRow(
+            context: context,
+            title: isLokallyPayPayment
+                ? 'Valor pago pelo passageiro'
+                : 'Valor a cobrar do passageiro',
+            amount: finalAmount,
+            color: Theme.of(context).primaryColor,
+            bold: true,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String displayPaymentMethod =
@@ -116,6 +248,13 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                     ? finalFareController.finalFare?.parcelCompleteTime
                     : finalFareController.finalFare?.rideCompleteTime;
 
+            final double finalAmount =
+                _safeDouble(finalFareController.finalFare?.paidFare);
+            final double originalAmount =
+                _originalFareAmount(finalFareController.finalFare);
+            final bool hasFinalReduction = originalAmount > finalAmount &&
+                (originalAmount - finalAmount) > 0.009;
+
             return (finalFareController.finalFare != null)
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,100 +281,12 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                                         .hintColor
                                         .withValues(alpha: 0.2))),
                             child: Column(children: [
-                              if (((finalFareController
-                                              .finalFare?.discountAmount ??
-                                          0) +
-                                      (finalFareController
-                                              .finalFare?.couponAmount ??
-                                          0)) >
-                                  0)
-                                Container(
-                                  margin: const EdgeInsets.only(
-                                    top: Dimensions.paddingSizeSmall,
-                                    left: Dimensions.paddingSizeSmall,
-                                    right: Dimensions.paddingSizeSmall,
-                                  ),
-                                  padding: const EdgeInsets.all(
-                                      Dimensions.paddingSizeSmall),
-                                  decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .hintColor
-                                          .withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(
-                                          Dimensions.radiusDefault)),
-                                  child: IntrinsicHeight(
-                                    child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Text('total_trip_cost'.tr,
-                                                    style: textRegular),
-                                                Text(
-                                                  PriceConverter.convertPrice(
-                                                      context,
-                                                      ((finalFareController
-                                                                      .finalFare
-                                                                      ?.discountAmount ??
-                                                                  0) +
-                                                              (finalFareController
-                                                                      .finalFare
-                                                                      ?.couponAmount ??
-                                                                  0)) +
-                                                          (finalFareController
-                                                                  .finalFare
-                                                                  ?.paidFare ??
-                                                              0)),
-                                                  style:
-                                                      textRobotoBold.copyWith(
-                                                    color: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .color,
-                                                    fontSize: Dimensions
-                                                        .fontSizeLarge,
-                                                  ),
-                                                ),
-                                              ]),
-                                          VerticalDivider(
-                                              thickness: 1,
-                                              color: Theme.of(context)
-                                                  .hintColor
-                                                  .withValues(alpha: 0.5)),
-                                          Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Text('admin_will_pay'.tr,
-                                                    style: textRegular),
-                                                Text(
-                                                  PriceConverter.convertPrice(
-                                                    context,
-                                                    ((finalFareController
-                                                                .finalFare
-                                                                ?.discountAmount ??
-                                                            0) +
-                                                        (finalFareController
-                                                                .finalFare
-                                                                ?.couponAmount ??
-                                                            0)),
-                                                  ),
-                                                  style:
-                                                      textRobotoBold.copyWith(
-                                                    color: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .color,
-                                                    fontSize: Dimensions
-                                                        .fontSizeLarge,
-                                                  ),
-                                                ),
-                                              ]),
-                                        ]),
-                                  ),
+                              if (hasFinalReduction)
+                                _finalChargeHighlight(
+                                  context: context,
+                                  originalAmount: originalAmount,
+                                  finalAmount: finalAmount,
+                                  isLokallyPayPayment: isLokallyPayPayment,
                                 ),
                               Row(
                                 mainAxisAlignment:
@@ -245,14 +296,10 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                                     padding: const EdgeInsets.all(
                                         Dimensions.paddingSizeDefault),
                                     child: Text(
-                                      ((finalFareController.finalFare
-                                                          ?.discountAmount ??
-                                                      0) +
-                                                  (finalFareController.finalFare
-                                                          ?.couponAmount ??
-                                                      0)) >
-                                              0
-                                          ? 'customer_will_pay'.tr
+                                      hasFinalReduction
+                                          ? (isLokallyPayPayment
+                                              ? 'Valor pago pelo passageiro'
+                                              : 'Valor a cobrar do passageiro')
                                           : 'total_trip_cost'.tr,
                                       style: textBold.copyWith(
                                         color: Theme.of(context)
@@ -268,10 +315,7 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                                         Dimensions.paddingSizeDefault),
                                     child: Text(
                                       PriceConverter.convertPrice(
-                                          context,
-                                          finalFareController
-                                                  .finalFare?.paidFare ??
-                                              0),
+                                          context, finalAmount),
                                       style: textRobotoBold.copyWith(
                                         color: Theme.of(context).primaryColor,
                                         fontSize: Dimensions.fontSizeOverLarge,
@@ -568,10 +612,7 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                                                       .paddingSizeExtraSmall)),
                                           child: Text(
                                             PriceConverter.convertPrice(
-                                                context,
-                                                finalFareController
-                                                        .finalFare?.paidFare ??
-                                                    0),
+                                                context, finalAmount),
                                             style: textRobotoBold.copyWith(
                                               color: Get.isDarkMode
                                                   ? Colors.white
@@ -591,10 +632,13 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
           })),
           bottomNavigationBar:
               GetBuilder<RideController>(builder: (finalFareController) {
+            final double finalAmount =
+                _safeDouble(finalFareController.finalFare?.paidFare);
+
             return GetBuilder<TripController>(builder: (tripController) {
               if (isLokallyPayPayment) {
                 return Container(
-                  height: 110,
+                  height: 128,
                   padding: const EdgeInsets.fromLTRB(
                     Dimensions.paddingSizeDefault,
                     Dimensions.paddingSizeDefault,
@@ -636,7 +680,7 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                               const SizedBox(
                                   height: Dimensions.paddingSizeExtraSmall),
                               Text(
-                                'O passageiro precisa concluir o pagamento pelo app: $displayPaymentMethod.',
+                                'Valor pago no app: ${PriceConverter.convertPrice(context, finalAmount)} • $displayPaymentMethod.',
                                 style: textRegular.copyWith(
                                   color: Theme.of(context)
                                       .textTheme
@@ -653,7 +697,7 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
               }
 
               return Container(
-                height: 90,
+                height: 104,
                 padding: const EdgeInsets.fromLTRB(
                   Dimensions.paddingSizeDefault,
                   Dimensions.paddingSizeDefault,
@@ -670,7 +714,7 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                           Get.dialog(ConfirmationDialogWidget(
                             icon: Images.paymentIcon,
                             description:
-                                'Confirme que recebeu o pagamento do passageiro: $displayPaymentMethod.',
+                                'Confirme que recebeu ${PriceConverter.convertPrice(context, finalAmount)} do passageiro via $displayPaymentMethod.',
                             onYesPressed: () {
                               setState(() {
                                 canPop = true;
