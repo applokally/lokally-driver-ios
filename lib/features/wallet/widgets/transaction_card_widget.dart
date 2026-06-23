@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:ride_sharing_user_app/helper/date_converter.dart';
 import 'package:ride_sharing_user_app/helper/price_converter.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
@@ -11,57 +10,146 @@ import 'package:ride_sharing_user_app/common_widgets/divider_widget.dart';
 
 class TransactionCardWidget extends StatelessWidget {
   final Transaction transaction;
-  const TransactionCardWidget({super.key, required this.transaction});
+
+  const TransactionCardWidget({
+    super.key,
+    required this.transaction,
+  });
+
+  String _formatBrazilianDateTime(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return '';
+    }
+
+    try {
+      final DateTime dateTime = DateTime.parse(value).toLocal();
+
+      const List<String> months = [
+        'jan.',
+        'fev.',
+        'mar.',
+        'abr.',
+        'mai.',
+        'jun.',
+        'jul.',
+        'ago.',
+        'set.',
+        'out.',
+        'nov.',
+        'dez.',
+      ];
+
+      final String day = dateTime.day.toString().padLeft(2, '0');
+      final String month = months[dateTime.month - 1];
+      final String hour = dateTime.hour.toString().padLeft(2, '0');
+      final String minute = dateTime.minute.toString().padLeft(2, '0');
+
+      return '$day $month ${dateTime.year}, $hour:$minute';
+    } catch (_) {
+      return value;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Dimensions.paddingSizeDefault, 0, Dimensions.paddingSizeDefault, Dimensions.paddingSizeDefault),
+      padding: const EdgeInsets.fromLTRB(
+        Dimensions.paddingSizeDefault,
+        0,
+        Dimensions.paddingSizeDefault,
+        Dimensions.paddingSizeDefault,
+      ),
       child: GetBuilder<WalletController>(
         builder: (walletController) {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: Dimensions.paddingSizeSmall),
-                child: Row(children: [
-                  Expanded(child:
-                  Row(crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(width: Dimensions.iconSizeLarge,
-                          child: Image.asset(Images.myEarnIcon, color: Theme.of(context).primaryColor)),
-                      const SizedBox(width: Dimensions.paddingSizeSmall),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                          Text(transaction.attribute??'', style: textSemiBold),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeExtraSmall),
-                            child: Text(DateConverter.isoStringToDateTimeString(transaction.createdAt!),
-                              style: textRegular.copyWith(color: Theme.of(context).hintColor),),
+                padding: const EdgeInsets.only(
+                  bottom: Dimensions.paddingSizeSmall,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: Dimensions.iconSizeLarge,
+                            child: Image.asset(
+                              Images.myEarnIcon,
+                              color: Theme.of(context).primaryColor,
+                            ),
                           ),
-                        ],),
+                          const SizedBox(
+                            width: Dimensions.paddingSizeSmall,
+                          ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  transaction.attribute ?? '',
+                                  style: textSemiBold,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: Dimensions.paddingSizeExtraSmall,
+                                  ),
+                                  child: Text(
+                                    _formatBrazilianDateTime(
+                                      transaction.createdAt,
+                                    ),
+                                    style: textRegular.copyWith(
+                                      color: Theme.of(context).hintColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  )),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSizeDefault, vertical: Dimensions.paddingSizeSeven),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(100),
-                      color: transaction.debit!>0?
-                          Theme.of(context).colorScheme.error.withValues(alpha: .15):
-                      Theme.of(context).primaryColor.withValues(alpha: .08)
                     ),
-                    child: Text(PriceConverter.convertPrice(context, transaction.debit!>0 ? transaction.debit! : transaction.credit!),
-                      style: textRobotoBold.copyWith(
-                          color: transaction.debit!>0?
-                          Theme.of(context).colorScheme.error:
-                          Theme.of(context).primaryColor)))
-                ],),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Dimensions.paddingSizeDefault,
+                        vertical: Dimensions.paddingSizeSeven,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        color: transaction.debit! > 0
+                            ? Theme.of(context)
+                                .colorScheme
+                                .error
+                                .withValues(alpha: .15)
+                            : Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: .08),
+                      ),
+                      child: Text(
+                        PriceConverter.convertPrice(
+                          context,
+                          transaction.debit! > 0
+                              ? transaction.debit!
+                              : transaction.credit!,
+                        ),
+                        style: textRobotoBold.copyWith(
+                          color: transaction.debit! > 0
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              DividerWidget(height: .5,color: Theme.of(context).hintColor.withValues(alpha: .75),)
+              DividerWidget(
+                height: .5,
+                color: Theme.of(context).hintColor.withValues(alpha: .75),
+              ),
             ],
           );
-        }
+        },
       ),
     );
   }

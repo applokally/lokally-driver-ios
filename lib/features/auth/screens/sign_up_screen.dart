@@ -1162,31 +1162,6 @@ class _LokallyPartnershipSection extends StatelessWidget {
             onTap: onSelectMonthly,
           ),
         ],
-        const SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(Dimensions.radiusDefault),
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.06),
-            border: Border.all(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.18),
-              width: 0.8,
-            ),
-          ),
-          child: Text(
-            'Você só será cobrado após 30 dias de uso do APP.',
-            textAlign: TextAlign.center,
-            style: textBold.copyWith(
-              fontSize: 13.8,
-              height: 1.35,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
       ],
     );
   }

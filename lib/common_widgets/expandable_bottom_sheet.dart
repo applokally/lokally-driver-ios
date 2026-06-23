@@ -95,7 +95,7 @@ class ExpandableBottomSheet extends StatefulWidget {
     this.onIsExtendedCallback,
     this.onIsContractedCallback,
     this.enableToggle = false,
-  })  : assert(persistentContentHeight >= 0);
+  }) : assert(persistentContentHeight >= 0);
 
   @override
   ExpandableBottomSheetState createState() => ExpandableBottomSheetState();
@@ -168,10 +168,10 @@ class ExpandableBottomSheetState extends State<ExpandableBottomSheet>
       children: <Widget>[
         Expanded(
           child: Stack(
+            fit: StackFit.expand,
             clipBehavior: Clip.hardEdge,
             children: <Widget>[
-              Align(
-                alignment: Alignment.topLeft,
+              Positioned.fill(
                 child: widget.background,
               ),
               AnimatedBuilder(
@@ -245,9 +245,9 @@ class ExpandableBottomSheetState extends State<ExpandableBottomSheet>
     double contentHeight = _contentKey.currentContext!.size!.height;
 
     double checkedPersistentContentHeight =
-    (widget.persistentContentHeight < contentHeight)
-        ? widget.persistentContentHeight
-        : contentHeight;
+        (widget.persistentContentHeight < contentHeight)
+            ? widget.persistentContentHeight
+            : contentHeight;
 
     _minOffset =
         context.size!.height - headerHeight - contentHeight - footerHeight;
@@ -365,7 +365,9 @@ class ExpandableBottomSheetState extends State<ExpandableBottomSheet>
     _oldStatus = AnimationStatus.forward;
     _controller.animateTo(
       0.0,
-      duration: duration != null ? Duration(milliseconds: duration) : widget.animationDurationExtend,
+      duration: duration != null
+          ? Duration(milliseconds: duration)
+          : widget.animationDurationExtend,
       curve: widget.animationCurveExpand,
     );
   }
@@ -378,7 +380,9 @@ class ExpandableBottomSheetState extends State<ExpandableBottomSheet>
     _oldStatus = AnimationStatus.reverse;
     _controller.animateTo(
       1.0,
-      duration: duration != null ? Duration(milliseconds: duration) : widget.animationDurationContract,
+      duration: duration != null
+          ? Duration(milliseconds: duration)
+          : widget.animationDurationContract,
       curve: widget.animationCurveContract,
     );
   }

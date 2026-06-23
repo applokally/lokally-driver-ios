@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
@@ -7,25 +8,23 @@ import 'package:ride_sharing_user_app/common_widgets/custom_date_picker.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_time_picker.dart';
 import 'package:ride_sharing_user_app/common_widgets/expandable_bottom_sheet.dart';
 import 'package:ride_sharing_user_app/common_widgets/ride_completation_dialog_widget.dart';
-import 'package:ride_sharing_user_app/common_widgets/swipable_button/slider_buttion_widget.dar.dart';
 import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:ride_sharing_user_app/features/home/screens/ride_list_screen.dart';
+import 'package:ride_sharing_user_app/features/map/controllers/map_controller.dart';
 import 'package:ride_sharing_user_app/features/map/widgets/parcel_cancelation_list.dart';
 import 'package:ride_sharing_user_app/features/map/widgets/ride_cancelation_list.dart';
-import 'package:ride_sharing_user_app/features/trip/controllers/trip_controller.dart';
-import 'package:ride_sharing_user_app/helper/display_helper.dart';
-import 'package:ride_sharing_user_app/localization/localization_controller.dart';
-import 'package:ride_sharing_user_app/util/app_constants.dart';
-import 'package:ride_sharing_user_app/util/dimensions.dart';
-import 'package:ride_sharing_user_app/util/images.dart';
-import 'package:ride_sharing_user_app/util/styles.dart';
-import 'package:ride_sharing_user_app/features/map/controllers/map_controller.dart';
 import 'package:ride_sharing_user_app/features/map/widgets/route_calculation_widget.dart';
 import 'package:ride_sharing_user_app/features/map/widgets/route_widget.dart';
 import 'package:ride_sharing_user_app/features/map/widgets/user_details_widget.dart';
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/features/splash/controllers/splash_controller.dart';
+import 'package:ride_sharing_user_app/features/trip/controllers/trip_controller.dart';
 import 'package:ride_sharing_user_app/features/trip/screens/payment_received_screen.dart';
+import 'package:ride_sharing_user_app/helper/display_helper.dart';
+import 'package:ride_sharing_user_app/util/app_constants.dart';
+import 'package:ride_sharing_user_app/util/dimensions.dart';
+import 'package:ride_sharing_user_app/util/images.dart';
+import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/common_widgets/payment_item_info_widget.dart';
 
 class RideOngoingWidget extends StatefulWidget {
@@ -41,6 +40,7 @@ class RideOngoingWidget extends StatefulWidget {
 class _RideOngoingWidgetState extends State<RideOngoingWidget> {
   bool isFinished = false;
   int currentState = 0;
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<RideController>(builder: (rideController) {
@@ -538,94 +538,36 @@ class _OngoingTripWidget extends StatelessWidget {
                 : (!rideController.tripDetail!.isPaused! &&
                         rideController.tripDetail!.type != AppConstants.parcel)
                     ? Column(children: [
-                        SliderButton(
-                          action: () {
-                            Get.dialog(const RideCompletationDialogWidget(),
-                                barrierDismissible: false);
-                          },
-                          label: Text("complete".tr,
-                              style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontSize: Dimensions.fontSizeLarge)),
-                          dismissThresholds: 0.5,
-                          dismissible: false,
-                          shimmer: false,
-                          width: 1170,
-                          height: 40,
-                          buttonSize: 40,
-                          radius: 20,
-                          icon: Center(
-                              child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Theme.of(context).cardColor),
-                            child: Center(
-                                child: Icon(
-                              Get.find<LocalizationController>().isLtr
-                                  ? Icons.arrow_forward_ios_rounded
-                                  : Icons.keyboard_arrow_left,
-                              color: Colors.grey,
-                              size: 20.0,
-                            )),
-                          )),
-                          isLtr: Get.find<LocalizationController>().isLtr,
-                          boxShadow: const BoxShadow(blurRadius: 0),
-                          buttonColor: Colors.transparent,
+                        _OngoingActionButton(
+                          label: 'complete'.tr,
+                          textColor: Theme.of(context).primaryColor,
                           backgroundColor: Theme.of(context)
                               .primaryColor
                               .withValues(alpha: 0.15),
-                          baseColor: Theme.of(context).primaryColor,
+                          onPressed: () {
+                            Get.dialog(const RideCompletationDialogWidget(),
+                                barrierDismissible: false);
+                          },
                         ),
                         const SizedBox(height: Dimensions.paddingSizeSmall),
-                        SliderButton(
-                          action: () => callBack(),
-                          label: Text(
-                            rideController.tripDetail?.type ==
-                                    AppConstants.parcel
-                                ? 'cancel_parcel'.tr
-                                : "cancel_ride".tr,
-                            style: textRegular.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: Dimensions.fontSizeLarge),
-                          ),
-                          dismissThresholds: 0.5,
-                          dismissible: false,
-                          shimmer: false,
-                          width: 1170,
-                          height: 40,
-                          buttonSize: 40,
-                          radius: 20,
-                          icon: Center(
-                              child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Theme.of(context).cardColor),
-                            child: Center(
-                                child: Icon(
-                              Get.find<LocalizationController>().isLtr
-                                  ? Icons.arrow_forward_ios_rounded
-                                  : Icons.keyboard_arrow_left,
-                              color: Theme.of(context).colorScheme.error,
-                              size: 20.0,
-                            )),
-                          )),
-                          isLtr: Get.find<LocalizationController>().isLtr,
-                          boxShadow: const BoxShadow(blurRadius: 0),
-                          buttonColor: Colors.transparent,
+                        _OngoingActionButton(
+                          label: 'cancel_ride'.tr,
+                          textColor: Theme.of(context).colorScheme.error,
                           backgroundColor: Theme.of(context)
                               .colorScheme
                               .error
                               .withValues(alpha: 0.15),
-                          baseColor: Theme.of(context).colorScheme.error,
+                          onPressed: callBack,
                         ),
                       ])
                     : Column(children: [
-                        SliderButton(
-                          action: () {
+                        _OngoingActionButton(
+                          label: 'complete'.tr,
+                          textColor: Theme.of(context).primaryColor,
+                          backgroundColor: Theme.of(context)
+                              .primaryColor
+                              .withValues(alpha: 0.15),
+                          onPressed: () {
                             if (rideController
                                         .tripDetail!.parcelInformation!.payer ==
                                     AppConstants.sender &&
@@ -647,39 +589,6 @@ class _OngoingTripWidget extends StatelessWidget {
                                   barrierDismissible: false);
                             }
                           },
-                          label: Text('complete'.tr,
-                              style: TextStyle(
-                                  color: Theme.of(context).primaryColor)),
-                          dismissThresholds: 0.5,
-                          dismissible: false,
-                          shimmer: false,
-                          width: 1170,
-                          height: 40,
-                          buttonSize: 40,
-                          radius: 20,
-                          icon: Center(
-                              child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Theme.of(context).cardColor),
-                            child: Center(
-                                child: Icon(
-                              Get.find<LocalizationController>().isLtr
-                                  ? Icons.arrow_forward_ios_rounded
-                                  : Icons.keyboard_arrow_left,
-                              color: Colors.grey,
-                              size: 20.0,
-                            )),
-                          )),
-                          isLtr: Get.find<LocalizationController>().isLtr,
-                          boxShadow: const BoxShadow(blurRadius: 0),
-                          buttonColor: Colors.transparent,
-                          backgroundColor: Theme.of(context)
-                              .primaryColor
-                              .withValues(alpha: 0.15),
-                          baseColor: Theme.of(context).primaryColor,
                         ),
                         ButtonWidget(
                           buttonText: rideController.tripDetail?.type ==
@@ -688,7 +597,7 @@ class _OngoingTripWidget extends StatelessWidget {
                               : 'cancel_ride'.tr,
                           textColor: Theme.of(context).colorScheme.error,
                           backgroundColor: Colors.transparent,
-                          onPressed: () => callBack(),
+                          onPressed: callBack,
                         )
                       ])
           ]),
@@ -698,3 +607,47 @@ class _OngoingTripWidget extends StatelessWidget {
   }
 }
 
+class _OngoingActionButton extends StatelessWidget {
+  final String label;
+  final Color textColor;
+  final Color backgroundColor;
+  final VoidCallback onPressed;
+
+  const _OngoingActionButton({
+    required this.label,
+    required this.textColor,
+    required this.backgroundColor,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 40,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(20),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: textRegular.copyWith(
+                  color: textColor,
+                  fontSize: Dimensions.fontSizeLarge,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

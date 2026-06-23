@@ -9,10 +9,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/features/splash/screens/splash_screen.dart';
 import 'package:ride_sharing_user_app/helper/notification_helper.dart';
-import 'package:ride_sharing_user_app/util/dimensions.dart';
-import 'package:ride_sharing_user_app/util/images.dart';
-import 'package:ride_sharing_user_app/features/map/screens/map_screen.dart';
-import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/features/splash/controllers/splash_controller.dart';
 import 'package:ride_sharing_user_app/helper/di_container.dart' as di;
 import 'package:ride_sharing_user_app/localization/localization_controller.dart';
@@ -21,8 +17,6 @@ import 'package:ride_sharing_user_app/theme/dark_theme.dart';
 import 'package:ride_sharing_user_app/theme/light_theme.dart';
 import 'package:ride_sharing_user_app/theme/theme_controller.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
-
-import 'features/map/controllers/map_controller.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -122,106 +116,7 @@ class MyApp extends StatelessWidget {
                             ),
                             child: SafeArea(
                               top: false,
-                              child: GetBuilder<RideController>(
-                                builder: (rideController) {
-                                  return Stack(
-                                    children: [
-                                      child!,
-                                      if (rideController.notSplashRoute) ...[
-                                        if (!(Get.find<SplashController>()
-                                                        .config!
-                                                        .maintenanceMode !=
-                                                    null &&
-                                                Get.find<SplashController>()
-                                                        .config!
-                                                        .maintenanceMode!
-                                                        .maintenanceStatus ==
-                                                    1 &&
-                                                Get.find<SplashController>()
-                                                        .config!
-                                                        .maintenanceMode!
-                                                        .selectedMaintenanceSystem!
-                                                        .driverApp ==
-                                                    1) ||
-                                            Get.find<SplashController>()
-                                                .haveOngoingRides()) ...[
-                                          Positioned(
-                                            top: Get.height * 0.3,
-                                            right: 0,
-                                            child: GestureDetector(
-                                              onTap: () async {
-                                                Response res =
-                                                    await rideController
-                                                        .getRideDetails(
-                                                  rideController.rideId ?? '1',
-                                                  fromHomeScreen: true,
-                                                );
-
-                                                if (res.statusCode == 403 ||
-                                                    rideController.tripDetail
-                                                            ?.currentStatus ==
-                                                        'returning' ||
-                                                    rideController.tripDetail
-                                                            ?.currentStatus ==
-                                                        'returned') {
-                                                  Get.find<RiderMapController>()
-                                                      .setRideCurrentState(
-                                                    RideState.initial,
-                                                  );
-                                                }
-
-                                                Get.to(
-                                                  () => const MapScreen(),
-                                                );
-                                              },
-                                              onHorizontalDragEnd:
-                                                  (DragEndDetails details) {
-                                                _onHorizontalDrag(details);
-                                                Get.to(
-                                                  () => const MapScreen(),
-                                                );
-                                              },
-                                              child: Stack(
-                                                children: [
-                                                  SizedBox(
-                                                    width: Dimensions
-                                                        .iconSizeExtraLarge,
-                                                    child: Image.asset(
-                                                      Images.homeToMapIcon,
-                                                      color: Theme.of(context)
-                                                          .primaryColor,
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 0,
-                                                    bottom: 0,
-                                                    left: 5,
-                                                    right: 5,
-                                                    child: SizedBox(
-                                                      width: 15,
-                                                      child: Image.asset(
-                                                        Images.map,
-                                                        color: Get.isDarkMode
-                                                            ? Theme.of(context)
-                                                                .textTheme
-                                                                .bodyMedium!
-                                                                .color
-                                                            : Theme.of(context)
-                                                                .colorScheme
-                                                                .shadow,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ],
-                                  );
-                                },
-                              ),
+                              child: child!,
                             ),
                           );
                         },
@@ -232,15 +127,5 @@ class MyApp extends StatelessWidget {
         );
       },
     );
-  }
-
-  void _onHorizontalDrag(DragEndDetails details) {
-    if (details.primaryVelocity == 0) return;
-
-    if (details.primaryVelocity!.compareTo(0) == -1) {
-      debugPrint('dragged from left');
-    } else {
-      debugPrint('dragged from right');
-    }
   }
 }

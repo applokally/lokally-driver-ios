@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ride_sharing_user_app/common_widgets/custom_asset_image_widget.dart';
-import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
-import 'package:ride_sharing_user_app/util/dimensions.dart';
-import 'package:ride_sharing_user_app/util/images.dart';
-import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/features/dashboard/controllers/bottom_menu_controller.dart';
 import 'package:ride_sharing_user_app/features/dashboard/domain/models/navigation_model.dart';
 import 'package:ride_sharing_user_app/features/home/screens/home_screen.dart';
-import 'package:ride_sharing_user_app/features/notification/screens/notification_screen.dart';
+import 'package:ride_sharing_user_app/features/map/screens/map_screen.dart';
 import 'package:ride_sharing_user_app/features/profile/controllers/profile_controller.dart';
 import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
 import 'package:ride_sharing_user_app/features/trip/screens/trip_screen.dart';
+import 'package:ride_sharing_user_app/features/wallet/controllers/wallet_controller.dart';
 import 'package:ride_sharing_user_app/features/wallet/screens/wallet_screen.dart';
-
-
+import 'package:ride_sharing_user_app/util/dimensions.dart';
+import 'package:ride_sharing_user_app/util/images.dart';
+import 'package:ride_sharing_user_app/util/styles.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -28,81 +27,132 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     Get.find<RideController>().updateRoute(true);
+
     final List<NavigationModel> item = [
-      NavigationModel(name: 'home'.tr, activeIcon: Images.homeActive, inactiveIcon: Images.homeOutline, screen: const HomeMenu()),
-      NavigationModel(name: 'activity'.tr, activeIcon: Images.activityActive, inactiveIcon: Images.activityOutline, screen: const TripHistoryMenu()),
-      NavigationModel(name: 'notification'.tr, activeIcon: Images.notificationActive, inactiveIcon: Images.notificationOutline, screen: const NotificationMenu()),
-      NavigationModel(name: 'wallet'.tr, activeIcon: Images.moneyActive, inactiveIcon: Images.moneyOutline, screen: const WalletScreenMenu()),
+      NavigationModel(
+        name: 'home'.tr,
+        activeIcon: Images.homeActive,
+        inactiveIcon: Images.homeOutline,
+        screen: const HomeMenu(),
+      ),
+      NavigationModel(
+        name: 'activity'.tr,
+        activeIcon: Images.activityActive,
+        inactiveIcon: Images.activityOutline,
+        screen: const TripHistoryMenu(),
+      ),
+      NavigationModel(
+        name: 'Corridas',
+        activeIcon: Images.rideShareIcon,
+        inactiveIcon: Images.rideShareIcon,
+        screen: const SizedBox.shrink(),
+      ),
+      NavigationModel(
+        name: 'wallet'.tr,
+        activeIcon: Images.moneyActive,
+        inactiveIcon: Images.moneyOutline,
+        screen: const WalletScreenMenu(),
+      ),
     ];
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (res, val) async {
         if (Get.find<BottomMenuController>().currentTab != 0) {
-          if(Get.find<ProfileController>().toggle){
+          if (Get.find<ProfileController>().toggle) {
             Get.find<ProfileController>().toggleDrawer();
             Get.find<BottomMenuController>().setTabIndex(0);
-          }else{
-            if(Get.find<BottomMenuController>().currentTab == 3){
-              if(Get.find<WalletController>().walletTypeIndex == 0){
-                Get.find<BottomMenuController>().setTabIndex(0);
-              }else{
-                Get.find<WalletController>().moveToPreviousProfileType();
-              }
-            }else{
+          } else if (Get.find<BottomMenuController>().currentTab == 3) {
+            if (Get.find<WalletController>().walletTypeIndex == 0) {
               Get.find<BottomMenuController>().setTabIndex(0);
+            } else {
+              Get.find<WalletController>().moveToPreviousProfileType();
             }
-          }
-          return;
-        } else {
-          if(Get.find<ProfileController>().toggle){
-            Get.find<ProfileController>().toggleDrawer();
-          }else{
-            Get.find<BottomMenuController>().exitApp();
+          } else {
+            Get.find<BottomMenuController>().setTabIndex(0);
           }
           return;
         }
+
+        if (Get.find<ProfileController>().toggle) {
+          Get.find<ProfileController>().toggleDrawer();
+        } else {
+          Get.find<BottomMenuController>().exitApp();
+        }
       },
-      child: GetBuilder<BottomMenuController>(builder: (menuController) {
-        return SafeArea(
-          top: false,
-          child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            body: Stack(children: [
-              PageStorage(bucket: bucket, child: item[menuController.currentTab].screen),
-              Positioned(child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.all(Dimensions.paddingSizeDefault),
-                  child: Container(height: 65,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: Theme.of(context).primaryColor,
-                      boxShadow: [BoxShadow(offset: const Offset(0,4), blurRadius: 3, color: Colors.black.withValues(alpha: 0.3))],
-                    ),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: generateBottomNavigationItems(menuController, item)),
+      child: GetBuilder<BottomMenuController>(
+        builder: (menuController) {
+          return SafeArea(
+            top: false,
+            child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              body: Stack(
+                children: [
+                  PageStorage(
+                    bucket: bucket,
+                    child: item[menuController.currentTab].screen,
                   ),
-                ),
-              ))
-            ]),
-          ),
-        );
-      }),
+                  Positioned(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                          Dimensions.paddingSizeDefault,
+                        ),
+                        child: Container(
+                          height: 65,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: Theme.of(context).primaryColor,
+                            boxShadow: [
+                              BoxShadow(
+                                offset: const Offset(0, 4),
+                                blurRadius: 3,
+                                color: Colors.black.withValues(alpha: 0.3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: generateBottomNavigationItems(
+                              menuController,
+                              item,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  List<Widget> generateBottomNavigationItems(BottomMenuController menuController, List<NavigationModel> item) {
-    List<Widget> items = [];
-    for(int index = 0; index < item.length; index++) {
-      items.add(Expanded(child: CustomMenuItem(
-        isSelected: menuController.currentTab == index,
-        name: item[index].name,
-        activeIcon: item[index].activeIcon,
-        inActiveIcon: item[index].inactiveIcon,
-        onTap: () => menuController.setTabIndex(index),
-      )));
-    }
-    return items;
+  List<Widget> generateBottomNavigationItems(
+    BottomMenuController menuController,
+    List<NavigationModel> item,
+  ) {
+    return List<Widget>.generate(item.length, (index) {
+      return Expanded(
+        child: CustomMenuItem(
+          isSelected: menuController.currentTab == index,
+          name: item[index].name,
+          activeIcon: item[index].activeIcon,
+          inActiveIcon: item[index].inactiveIcon,
+          onTap: () {
+            if (index == 2) {
+              Get.to(() => const MapScreen(fromScreen: 'dashboard'));
+              return;
+            }
+
+            menuController.setTabIndex(index);
+          },
+        ),
+      );
+    });
   }
 }
 
@@ -114,37 +164,49 @@ class CustomMenuItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const CustomMenuItem({
-    super.key, required this.isSelected,
-    required this.name, required this.activeIcon,
-    required this.inActiveIcon, required this.onTap,
+    super.key,
+    required this.isSelected,
+    required this.name,
+    required this.activeIcon,
+    required this.inActiveIcon,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
       hoverColor: Colors.transparent,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: SizedBox(
-          width: isSelected ? 90 : 50,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: AnimatedScale(
+          scale: isSelected ? 1.06 : 1,
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center, mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min, children: [
-            CustomAssetImageWidget(
-              isSelected ? activeIcon : inActiveIcon,
-              width: Dimensions.menuIconSize, height: Dimensions.menuIconSize,
-              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
-            ),
-
-            isSelected ?
-            Text(
-              name.tr, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: textRegular.copyWith(color: Colors.white, fontSize: Dimensions.fontSizeExtraSmall),
-            ) :
-            const SizedBox(),
-          ]
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomAssetImageWidget(
+                isSelected ? activeIcon : inActiveIcon,
+                width: Dimensions.menuIconSize,
+                height: Dimensions.menuIconSize,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                name.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: textRegular.copyWith(
+                  color: Colors.white,
+                  fontSize: Dimensions.fontSizeExtraSmall,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ],
           ),
         ),
       ),

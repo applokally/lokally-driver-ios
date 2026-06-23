@@ -84,7 +84,47 @@ class AccessLocationScreen extends StatelessWidget {
                                     ),
                                     maxLines: 4,
                                   ),
-                                  const SizedBox(height: 34),
+                                  const SizedBox(height: 18),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(
+                                      Dimensions.paddingSizeDefault,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: primaryColor.withValues(
+                                        alpha: Get.isDarkMode ? 0.18 : 0.08,
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: primaryColor.withValues(
+                                          alpha: Get.isDarkMode ? 0.36 : 0.18,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.privacy_tip_outlined,
+                                          size: 22,
+                                          color: primaryColor,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Usamos sua localização para receber chamadas, acompanhar viagens e entregas e manter a segurança operacional, mesmo quando o app estiver fechado ou em segundo plano.',
+                                            style: textMedium.copyWith(
+                                              fontSize: 13.5,
+                                              height: 1.42,
+                                              color: descriptionColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 28),
                                   const BottomButton(),
                                 ],
                               ),

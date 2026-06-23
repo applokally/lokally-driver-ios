@@ -1,8 +1,16 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/confirmation_dialog_widget.dart';
+import 'package:ride_sharing_user_app/common_widgets/payment_item_info_widget.dart';
+import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
+import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
+import 'package:ride_sharing_user_app/features/trip/controllers/trip_controller.dart';
 import 'package:ride_sharing_user_app/features/trip/widgets/customer_details_widget.dart';
 import 'package:ride_sharing_user_app/features/trip/widgets/fare_widget.dart';
 import 'package:ride_sharing_user_app/features/trip/widgets/trip_route_widget.dart';
@@ -11,12 +19,6 @@ import 'package:ride_sharing_user_app/helper/price_converter.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
-import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
-import 'package:ride_sharing_user_app/features/ride/controllers/ride_controller.dart';
-import 'package:ride_sharing_user_app/features/trip/controllers/trip_controller.dart';
-import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
-import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
-import 'package:ride_sharing_user_app/common_widgets/payment_item_info_widget.dart';
 
 class PaymentReceivedScreen extends StatefulWidget {
   final bool fromParcel;
@@ -29,34 +31,88 @@ class PaymentReceivedScreen extends StatefulWidget {
 class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
     with WidgetsBindingObserver {
   bool canPop = false;
+  Timer? _paymentStatusTimer;
+  bool _isCheckingPaymentStatus = false;
+  bool _paymentConfirmed = false;
 
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPaymentStatusWatcher();
+    });
     super.initState();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+
     if (state == AppLifecycleState.resumed) {
-      Get.find<RideController>()
-          .getRideDetails(Get.find<RideController>().tripDetail!.id!)
-          .then((value) {
-        if (Get.find<RideController>().tripDetail!.paymentStatus == 'paid') {
-          Get.offAll(() => const DashboardScreen());
-        } else {
-          Get.find<RideController>()
-              .getFinalFare(Get.find<RideController>().tripDetail!.id!);
-        }
-      });
+      _startPaymentStatusWatcher(checkImmediately: true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _stopPaymentStatusWatcher();
     }
   }
 
   @override
   void dispose() {
+    _stopPaymentStatusWatcher();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _startPaymentStatusWatcher({bool checkImmediately = true}) {
+    final RideController rideController = Get.find<RideController>();
+    final bool isLokallyPayPayment =
+        rideController.tripDetail?.isLokallyPayPayment ?? false;
+
+    if (!isLokallyPayPayment || _paymentConfirmed) {
+      return;
+    }
+
+    if (checkImmediately) {
+      _checkPaymentStatus();
+    }
+
+    _paymentStatusTimer ??= Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkPaymentStatus();
+    });
+  }
+
+  void _stopPaymentStatusWatcher() {
+    _paymentStatusTimer?.cancel();
+    _paymentStatusTimer = null;
+  }
+
+  Future<void> _checkPaymentStatus() async {
+    if (!mounted || _isCheckingPaymentStatus || _paymentConfirmed) {
+      return;
+    }
+
+    final String? tripId = Get.find<RideController>().tripDetail?.id;
+    if (tripId == null || tripId.isEmpty) {
+      return;
+    }
+
+    _isCheckingPaymentStatus = true;
+
+    try {
+      final response = await Get.find<RideController>().getRideDetails(tripId);
+
+      if (!mounted || _paymentConfirmed || response.statusCode != 200) {
+        return;
+      }
+
+      if (Get.find<RideController>().tripDetail?.paymentStatus == 'paid') {
+        _paymentConfirmed = true;
+        _stopPaymentStatusWatcher();
+        Get.offAll(() => const DashboardScreen());
+      }
+    } finally {
+      _isCheckingPaymentStatus = false;
+    }
   }
 
   double _safeDouble(dynamic value) {
@@ -69,6 +125,62 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
     }
 
     return double.tryParse(value.toString()) ?? 0;
+  }
+
+  double _safeMetricDouble(dynamic value) {
+    if (value == null) {
+      return 0;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    String normalized =
+        value.toString().trim().replaceAll(RegExp(r'[^0-9,.-]'), '');
+
+    if (normalized.isEmpty) {
+      return 0;
+    }
+
+    if (normalized.contains(',') && normalized.contains('.')) {
+      if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+        normalized = normalized.replaceAll('.', '').replaceAll(',', '.');
+      } else {
+        normalized = normalized.replaceAll(',', '');
+      }
+    } else {
+      normalized = normalized.replaceAll(',', '.');
+    }
+
+    return double.tryParse(normalized) ?? 0;
+  }
+
+  String _formatTripDuration(dynamic actualTime) {
+    final int totalSeconds = (_safeMetricDouble(actualTime) * 60).round();
+
+    if (totalSeconds <= 0) {
+      return '0 min';
+    }
+
+    final int minutes = totalSeconds ~/ 60;
+    final int seconds = totalSeconds % 60;
+
+    if (minutes == 0) {
+      return '$seconds s';
+    }
+
+    if (seconds == 0) {
+      return '$minutes min';
+    }
+
+    return '$minutes min $seconds s';
+  }
+
+  String _formatTripDistance(dynamic actualDistance) {
+    return _safeMetricDouble(actualDistance)
+        .toStringAsFixed(2)
+        .replaceAll('.', ',');
   }
 
   double _originalFareAmount(dynamic finalFare) {
@@ -335,14 +447,15 @@ class _PaymentReceivedScreenState extends State<PaymentReceivedScreen>
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SummeryItem(
-                                    title:
-                                        '${finalFareController.finalFare!.actualTime} ${'minute'.tr}',
+                                    title: _formatTripDuration(
+                                        finalFareController
+                                            .finalFare!.actualTime),
                                     subTitle: 'time',
                                   ),
                                   SizedBox(width: Get.width * 0.2),
                                   SummeryItem(
                                     title:
-                                        '${finalFareController.finalFare!.actualDistance} km',
+                                        '${_formatTripDistance(finalFareController.finalFare!.actualDistance)} km',
                                     subTitle: 'distance',
                                   ),
                                 ]),

@@ -17,10 +17,10 @@ class StayOnlineWidget extends StatelessWidget {
         Get.find<ProfileController>().getProfileInfo();
       },
       builder: (profileController) {
-        log("=online==>${profileController.profileInfo?.details?.isOnline}");
+        log('=online==>${profileController.profileInfo?.details?.isOnline}');
 
         final bool isOnline =
-            profileController.profileInfo?.details?.isOnline == "1";
+            profileController.profileInfo?.details?.isOnline == '1';
 
         final Color statusColor = isOnline
             ? Theme.of(context).primaryColor
@@ -43,12 +43,17 @@ class StayOnlineWidget extends StatelessWidget {
             bottom: Dimensions.paddingSizeDefault,
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                height: 76,
-                width: 100,
+              const Align(
                 alignment: Alignment.center,
-                child: const WifiAnimations(),
+                child: SizedBox.square(
+                  dimension: 76,
+                  child: WifiAnimations(
+                    size: 76,
+                    centered: true,
+                  ),
+                ),
               ),
               const SizedBox(height: Dimensions.paddingSizeSmall),
               Container(

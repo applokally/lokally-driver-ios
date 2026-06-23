@@ -22,7 +22,6 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/util/dimensions.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/add_vehicle_design_widget.dart';
-import 'package:ride_sharing_user_app/features/home/widgets/my_activity_list_view_widget.dart';
 import 'package:ride_sharing_user_app/features/home/screens/parcel_list_screen.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/ongoing_ride_card_widget.dart';
 import 'package:ride_sharing_user_app/features/home/widgets/profile_info_card_widget.dart';
@@ -193,7 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 60.0),
-                                const DriverHomeBannerCarousel(),
                                 if (profileController.profileInfo?.vehicle !=
                                         null &&
                                     profileController.profileInfo?.vehicle
@@ -389,8 +387,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 if (Get.find<ProfileController>()
                                         .profileInfo
                                         ?.vehicle !=
-                                    null)
-                                  const MyActivityListViewWidget(),
+                                    null) ...[
+                                  const SizedBox(
+                                    height: Dimensions.paddingSizeLarge,
+                                  ),
+                                  const DriverHomeBannerCarousel(),
+                                ],
                                 const SizedBox(
                                   height: Dimensions.paddingSizeDefault,
                                 ),
@@ -681,9 +683,11 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
           ? AppConstants.baseUrl.substring(0, AppConstants.baseUrl.length - 1)
           : AppConstants.baseUrl;
 
-      final response = await GetConnect().get(
-        '$baseUrl/api/driver/banner/list?limit=10&offset=1',
-      );
+      final response = await GetConnect()
+          .get(
+            '$baseUrl/api/driver/banner/list?limit=10&offset=1',
+          )
+          .timeout(const Duration(seconds: 10));
 
       final dynamic responseBody =
           response.body is String ? jsonDecode(response.body) : response.body;
@@ -712,6 +716,7 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
         _isLoading = false;
       });
 
+      _precacheInitialBanners();
       _startAutoSlide();
     } catch (_) {
       if (!mounted) {
@@ -723,6 +728,43 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
         _isLoading = false;
       });
     }
+  }
+
+  ImageProvider<Object> _bannerImageProvider(String imageUrl) {
+    final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+
+    return ResizeImage(
+      NetworkImage(imageUrl),
+      width: (MediaQuery.of(context).size.width * devicePixelRatio).round(),
+      height: (176 * devicePixelRatio).round(),
+    );
+  }
+
+  void _precacheInitialBanners() {
+    if (!mounted || _banners.isEmpty) {
+      return;
+    }
+
+    final int preloadCount = _banners.length >= 2 ? 2 : 1;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      for (int index = 0; index < preloadCount; index++) {
+        precacheImage(_bannerImageProvider(_banners[index].imageUrl), context);
+      }
+    });
+  }
+
+  void _precacheNextBanner(int currentIndex) {
+    if (!mounted || _banners.length <= 1) {
+      return;
+    }
+
+    final int nextIndex = (currentIndex + 1) % _banners.length;
+    precacheImage(_bannerImageProvider(_banners[nextIndex].imageUrl), context);
   }
 
   void _startAutoSlide() {
@@ -807,10 +849,12 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
             child: PageView.builder(
               controller: _pageController,
               itemCount: _banners.length,
+              allowImplicitScrolling: true,
               onPageChanged: (index) {
                 setState(() {
                   _currentIndex = index;
                 });
+                _precacheNextBanner(index);
               },
               itemBuilder: (context, index) {
                 final _DriverBannerItem banner = _banners[index];
@@ -836,11 +880,24 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
                       borderRadius: BorderRadius.circular(
                         Dimensions.radiusLarge,
                       ),
-                      child: Image.network(
-                        banner.imageUrl,
+                      child: Image(
+                        image: _bannerImageProvider(banner.imageUrl),
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                        frameBuilder:
+                            (context, child, frame, wasSynchronouslyLoaded) {
+                          if (wasSynchronouslyLoaded || frame != null) {
+                            return child;
+                          }
+
+                          return Container(
+                            color: Theme.of(context)
+                                .primaryColor
+                                .withValues(alpha: 0.08),
+                          );
+                        },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Theme.of(context)

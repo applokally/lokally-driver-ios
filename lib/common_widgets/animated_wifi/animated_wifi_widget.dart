@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 class WifiAnimations extends StatefulWidget {
-  const WifiAnimations({super.key, this.size = 100, this.color = Colors.grey, this.centered = false});
+  const WifiAnimations({
+    super.key,
+    this.size = 100,
+    this.color = Colors.grey,
+    this.centered = false,
+  });
 
   final double size;
   final bool centered;
@@ -11,7 +17,8 @@ class WifiAnimations extends StatefulWidget {
   WifiAnimationsState createState() => WifiAnimationsState();
 }
 
-class WifiAnimationsState extends State<WifiAnimations> with SingleTickerProviderStateMixin {
+class WifiAnimationsState extends State<WifiAnimations>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -25,18 +32,27 @@ class WifiAnimationsState extends State<WifiAnimations> with SingleTickerProvide
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: List.generate(6, (index) {
-                return Container(width: widget.size, height: widget.size,
-                      padding: EdgeInsets.all(index * (widget.size / 10)),
-                      child: ShapesState(
-                        controller: _controller,
-                        color: widget.color,
-                        centered: widget.centered,
-                        index: index,
-                      ));
-        }));
+    return SizedBox.square(
+      dimension: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: List.generate(6, (index) {
+          return SizedBox.square(
+            dimension: widget.size,
+            child: Padding(
+              padding: EdgeInsets.all(index * (widget.size / 10)),
+              child: ShapesState(
+                controller: _controller,
+                color: widget.color,
+                centered: widget.centered,
+                index: index,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
   }
-
 
   @override
   void dispose() {
@@ -46,7 +62,13 @@ class WifiAnimationsState extends State<WifiAnimations> with SingleTickerProvide
 }
 
 class ShapesState extends AnimatedWidget {
-  const ShapesState({super.key, required this.index, required this.color, required this.centered, required AnimationController controller}) : super(listenable: controller);
+  const ShapesState({
+    super.key,
+    required this.index,
+    required this.color,
+    required this.centered,
+    required AnimationController controller,
+  }) : super(listenable: controller);
 
   final int index;
   final bool centered;
@@ -66,39 +88,55 @@ class DrawShapes extends CustomPainter {
   DrawShapes(this.index, this.color, this.centered, this.controller);
 
   final Color color;
-
   final bool centered;
   final int index;
   final double controller;
 
   @override
   void paint(Canvas canvas, Size size) {
-    Color color = Theme.of(Get.context!).primaryColor.withValues(alpha: 0.10);
+    final Color primaryColor =
+        color == Colors.grey ? Theme.of(Get.context!).primaryColor : color;
+
+    Color waveColor = primaryColor.withValues(alpha: 0.10);
     if ((4 - index) == ((controller * 5).toInt())) {
-      color = Theme.of(Get.context!).primaryColor;
+      waveColor = primaryColor;
     }
 
-    Paint brush =  Paint()
-      ..color = color
+    final Paint brush = Paint()
+      ..color = waveColor
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5;
 
-    var startArc = (225 * 3.14) / 180;
-    var endArc = (90 * 3.14) / 180;
+    const double pi = 3.14;
+    final double startArc = (225 * pi) / 180;
+    final double sweepArc = (90 * pi) / 180;
+    final Offset center = Offset(size.width / 2, size.height / 2);
 
-    //make the first as a circle
     if (index == 0 && centered) {
       brush.style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(size.height / 2, size.width / 2), 5, brush);
-    } else {
-      brush.style = PaintingStyle.stroke;
-      canvas.drawArc(Rect.fromCenter(center: Offset(size.height / 2, size.width / 2), height: size.height, width: size.width,), startArc, endArc, false, brush);
+      canvas.drawCircle(center, 5, brush);
+      return;
     }
+
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: center,
+        height: size.height,
+        width: size.width,
+      ),
+      startArc,
+      sweepArc,
+      false,
+      brush,
+    );
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant DrawShapes oldDelegate) {
+    return oldDelegate.index != index ||
+        oldDelegate.color != color ||
+        oldDelegate.centered != centered ||
+        oldDelegate.controller != controller;
   }
 }

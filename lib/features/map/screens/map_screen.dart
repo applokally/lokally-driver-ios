@@ -51,45 +51,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Marker? marker;
   LatLng? _driverCurrentLatLng;
   bool _isTryingToLoadLocation = false;
-  bool _isAutoOpeningRideRequestScreen = false;
-  DateTime? _lastRideRequestAutoOpenAt;
-  int _lastRideRequestAutoOpenCount = 0;
-
-  void _openRideRequestScreenAutomatically(int totalRequests) {
-    if (totalRequests <= 0) {
-      return;
-    }
-
-    if (_isAutoOpeningRideRequestScreen || Get.currentRoute == '/RideRequestScreen') {
-      return;
-    }
-
-    final DateTime now = DateTime.now();
-
-    if (_lastRideRequestAutoOpenCount == totalRequests &&
-        _lastRideRequestAutoOpenAt != null &&
-        now.difference(_lastRideRequestAutoOpenAt!).inSeconds < 8) {
-      return;
-    }
-
-    _isAutoOpeningRideRequestScreen = true;
-    _lastRideRequestAutoOpenCount = totalRequests;
-    _lastRideRequestAutoOpenAt = now;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        if (!mounted) {
-          return;
-        }
-
-        if (Get.currentRoute != '/RideRequestScreen') {
-          await Get.to(() => const RideRequestScreen());
-        }
-      } finally {
-        _isAutoOpeningRideRequestScreen = false;
-      }
-    });
-  }
 
   @override
   void initState() {
@@ -306,15 +267,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     background: GetBuilder<RideController>(
                       builder: (rideController) {
                         return Stack(
+                          fit: StackFit.expand,
                           children: [
                             Positioned.fill(
-                              bottom: (riderMapController.sheetHeight -
-                                      (Get.find<RiderMapController>()
-                                                  .currentRideState ==
-                                              RideState.initial
-                                          ? 80
-                                          : 20))
-                                  .clamp(0.0, Get.height * 0.72),
                               child: GoogleMap(
                                 style: Get.isDarkMode
                                     ? Get.find<ThemeController>().darkMap
@@ -433,55 +388,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                 ),
                               ),
                             ),
-                            Positioned(
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Get.find<RideController>().updateRoute(
-                                      true,
-                                      notify: true,
-                                    );
-                                    Get.off(() => const DashboardScreen());
-                                  },
-                                  onHorizontalDragEnd:
-                                      (DragEndDetails details) {
-                                    _onHorizontalDrag(details);
-                                    Get.find<RideController>().updateRoute(
-                                      true,
-                                      notify: true,
-                                    );
-                                    Get.off(() => const DashboardScreen());
-                                  },
-                                  child: Stack(
-                                    children: [
-                                      SizedBox(
-                                        width: Dimensions.iconSizeExtraLarge,
-                                        child: Image.asset(
-                                          Images.mapToHomeIcon,
-                                          color: Theme.of(context).primaryColor,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 0,
-                                        bottom: 0,
-                                        left: 5,
-                                        right: 5,
-                                        child: SizedBox(
-                                          width: 15,
-                                          child: Image.asset(
-                                            Images.homeSmallIcon,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .shadow,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
                             if (_isLocationShareEnable())
                               Positioned(
                                 bottom: Get.height * 0.46,
@@ -585,8 +491,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                         .pendingRideRequestModel?.totalSize ??
                                     0;
 
-                                _openRideRequestScreenAutomatically(totalRequests);
-
                                 return InkWell(
                                   onTap: () =>
                                       Get.to(() => const RideRequestScreen()),
@@ -654,15 +558,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
-
-  void _onHorizontalDrag(DragEndDetails details) {
-    if (details.primaryVelocity == 0) {
-      return;
-    }
-
-    if (details.primaryVelocity!.compareTo(0) == -1) {
-    } else {}
   }
 
   void _setMapCurrentRoutes() async {

@@ -674,46 +674,24 @@ class _AcceptedTripWidgetState extends State<_AcceptedTripWidget> {
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: Dimensions.paddingSizeDefault),
-              child: SliderButton(
-                action: () => widget.callBack(),
-                label: Text(
-                  rideController.tripDetail!.type != "parcel"
+              child: SizedBox(
+                height: 40,
+                width: double.infinity,
+                child: ButtonWidget(
+                  buttonText: rideController.tripDetail!.type != "parcel"
                       ? 'cancel_ride'.tr
                       : 'cancel_parcel'.tr,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: Dimensions.fontSizeLarge),
+                  showBorder: true,
+                  transparent: true,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .error
+                      .withValues(alpha: 0.15),
+                  borderColor: Theme.of(context).colorScheme.error,
+                  textColor: Theme.of(context).colorScheme.error,
+                  radius: 20,
+                  onPressed: () => widget.callBack(),
                 ),
-                dismissThresholds: 0.5,
-                dismissible: false,
-                shimmer: false,
-                width: 1170,
-                height: 40,
-                buttonSize: 40,
-                radius: 20,
-                icon: Center(
-                    child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).cardColor,
-                  ),
-                  child: Center(
-                      child: Icon(
-                    Get.find<LocalizationController>().isLtr
-                        ? Icons.arrow_forward_ios_rounded
-                        : Icons.keyboard_arrow_left,
-                    color: Theme.of(context).colorScheme.error,
-                    size: Dimensions.paddingSizeLarge,
-                  )),
-                )),
-                isLtr: Get.find<LocalizationController>().isLtr,
-                boxShadow: const BoxShadow(blurRadius: 0),
-                buttonColor: Colors.transparent,
-                backgroundColor:
-                    Theme.of(context).colorScheme.error.withValues(alpha: 0.15),
-                baseColor: Theme.of(context).colorScheme.error,
               ),
             )
           ]),
