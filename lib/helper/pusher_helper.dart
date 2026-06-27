@@ -80,6 +80,13 @@ class PusherHelper {
         driverTripSubscribe.bind("customer-trip-request.$id").listen((event) {
           final Map<String, dynamic> eventData = _eventData(event.data);
           final String tripId = eventData['trip_id']?.toString() ?? '';
+          final bool hasCachedOngoingTrip =
+              (Get.find<RideController>().ongoingTrip ?? []).isNotEmpty;
+
+          if (!hasCachedOngoingTrip) {
+            NotificationHelper.playRequestSound(tripId);
+          }
+
           Get.find<RideController>().ongoingTripList().then((value) {
             if ((Get.find<RideController>().ongoingTrip ?? []).isEmpty) {
               Get.find<RideController>().getPendingRideRequestList(1);

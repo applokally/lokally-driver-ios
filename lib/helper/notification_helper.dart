@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -123,25 +122,6 @@ class NotificationHelper {
     return action == 'new_ride_request' || action == 'new_parcel_request';
   }
 
-  static Future<void> _handleLocalNotificationResponse(
-      NotificationResponse response) async {
-    final String payload = response.payload?.trim() ?? '';
-
-    if (payload.isEmpty) {
-      return;
-    }
-
-    try {
-      final dynamic decoded = jsonDecode(payload);
-
-      if (decoded is Map) {
-        await notificationToRoute(Map<String, dynamic>.from(decoded));
-      }
-    } catch (_) {
-      // Notificações antigas podem ter payload sem dados de rota.
-    }
-  }
-
   static Future<void> initialize(
       FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin) async {
     AndroidInitializationSettings androidInitialize =
@@ -153,9 +133,25 @@ class NotificationHelper {
     );
     var initializationsSettings =
         InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-    await flutterLocalNotificationsPlugin.initialize(
+    flutterLocalNotificationsPlugin.initialize(
       settings: initializationsSettings,
-      onDidReceiveNotificationResponse: _handleLocalNotificationResponse,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        if (kDebugMode) {
+          print('Notification response ==> ${response.payload.toString()}');
+        }
+        try {
+          if (response.payload != null && response.payload!.isNotEmpty) {
+            if (kDebugMode) {
+              print('Notification response ==> ${response.payload.toString()}');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Notification response ==> ${response.payload.toString()}');
+          }
+        }
+        return;
+      },
       onDidReceiveBackgroundNotificationResponse: myBackgroundMessageReceiver,
     );
 
@@ -187,6 +183,25 @@ class NotificationHelper {
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      AndroidInitializationSettings androidInitialize =
+          const AndroidInitializationSettings('notification_icon');
+      var iOSInitialize = const DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      var initializationsSettings = InitializationSettings(
+          android: androidInitialize, iOS: iOSInitialize);
+      flutterLocalNotificationsPlugin.initialize(
+        settings: initializationsSettings,
+        onDidReceiveNotificationResponse:
+            (NotificationResponse response) async {
+          notificationToRoute(message.data);
+          return;
+        },
+        onDidReceiveBackgroundNotificationResponse: myBackgroundMessageReceiver,
+      );
+
       if (kDebugMode) {
         print('onMessage: ${message.data}');
       }
@@ -383,14 +398,13 @@ class NotificationHelper {
 
   static Future<void> showNotification(RemoteMessage message,
       FlutterLocalNotificationsPlugin fln, bool data) async {
-    final String title = message.data['title']?.toString() ?? '';
-    final String body = message.data['body']?.toString() ?? '';
-    final String? orderID = message.data['order_id']?.toString();
-    final String payload = jsonEncode(message.data);
-    final String? image = (message.data['image'] != null &&
-            message.data['image'].toString().isNotEmpty)
-        ? message.data['image'].toString().startsWith('http')
-            ? message.data['image'].toString()
+    String title = message.data['title'];
+    String body = message.data['body'];
+    String? orderID = message.data['order_id'];
+    String? image = (message.data['image'] != null &&
+            message.data['image'].isNotEmpty)
+        ? message.data['image'].startsWith('http')
+            ? message.data['image']
             : '${AppConstants.baseUrl}/storage/app/public/notification/${message.data['image']}'
         : null;
 
@@ -401,7 +415,7 @@ class NotificationHelper {
         orderID,
         image,
         fln,
-        payload: payload,
+        isRequestNotification: _isRequestAction(message.data['action']),
       );
     } catch (e) {
       await showBigPictureNotificationHiddenLargeIcon(
@@ -410,7 +424,7 @@ class NotificationHelper {
         orderID,
         null,
         fln,
-        payload: payload,
+        isRequestNotification: _isRequestAction(message.data['action']),
       );
       customPrint('Failed to show notification: ${e.toString()}');
     }
@@ -424,17 +438,18 @@ class NotificationHelper {
       FlutterLocalNotificationsPlugin fln) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'hexaride_foreground',
-      'Solicitações em aberto',
-      playSound: false,
+      'hexaride',
+      'hexaride',
+      playSound: true,
       importance: Importance.max,
       priority: Priority.max,
+      sound: RawResourceAndroidNotificationSound('notification'),
     );
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
-      presentSound: false,
+      presentSound: true,
     );
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -462,12 +477,13 @@ class NotificationHelper {
     );
     AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'hexaride_foreground',
-      'Solicitações em aberto',
+      'hexaride',
+      'hexaride',
       importance: Importance.max,
       styleInformation: bigTextStyleInformation,
       priority: Priority.max,
-      playSound: false,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound('notification'),
     );
     NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
@@ -485,7 +501,7 @@ class NotificationHelper {
       String? orderID,
       String? image,
       FlutterLocalNotificationsPlugin fln,
-      {required String payload}) async {
+      {bool isRequestNotification = false}) async {
     String? largeIconPath;
     String? bigPicturePath;
     BigPictureStyleInformation? bigPictureStyleInformation;
@@ -511,22 +527,25 @@ class NotificationHelper {
     }
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'hexaride_foreground',
-      'Solicitações em aberto',
+      isRequestNotification ? 'hexaride_foreground' : 'hexaride',
+      isRequestNotification ? 'Solicitações em aberto' : 'Notificações Lokally',
       priority: Priority.max,
       importance: Importance.max,
-      playSound: false,
+      playSound: !isRequestNotification,
       largeIcon:
           largeIconPath != null ? FilePathAndroidBitmap(largeIconPath) : null,
       styleInformation: largeIconPath != null
           ? bigPictureStyleInformation
           : bigTextStyleInformation,
+      sound: isRequestNotification
+          ? null
+          : const RawResourceAndroidNotificationSound('notification'),
     );
-    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
-      presentSound: false,
+      presentSound: !isRequestNotification,
     );
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -537,7 +556,7 @@ class NotificationHelper {
         title: title,
         body: body,
         notificationDetails: platformChannelSpecifics,
-        payload: payload);
+        payload: orderID);
   }
 
   static Future<String> _downloadAndSaveFile(
