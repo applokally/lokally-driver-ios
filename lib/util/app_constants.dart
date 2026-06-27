@@ -4,7 +4,8 @@ import 'package:ride_sharing_user_app/util/images.dart';
 class AppConstants {
   static const String appName = 'Lokally Driver';
   static const String baseUrl = 'https://admlokally.online';
-  static const String polylineMapKey = 'AIzaSyDslzVLtnZEeLjNfsD08dYHTeUkyhgj41Y';
+  static const String polylineMapKey =
+      'AIzaSyDslzVLtnZEeLjNfsD08dYHTeUkyhgj41Y';
   static const double appVersion = 3.1;
 
   /// Flutter SDK 3.41.4
@@ -93,6 +94,12 @@ class AppConstants {
       '/api/driver/income-statement?limit=10&offset=';
   static const String payableListUri =
       '/api/driver/transaction/payable-list?limit=10&offset=';
+  static const String locallyBillingOverviewUri =
+      '/api/driver/transaction/billing-overview';
+  static const String weeklyCommissionBillingPixUri =
+      '/api/driver/transaction/weekly-commission-billings/';
+  static const String monthlyBillingPixUri =
+      '/api/driver/transaction/monthly-billings/';
   static const String withdrawPendingListUri =
       '/api/driver/withdraw/pending-request?limit=10&offset=';
   static const String withdrawSettledListUri =

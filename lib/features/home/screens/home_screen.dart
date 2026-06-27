@@ -658,6 +658,8 @@ class DriverHomeBannerCarousel extends StatefulWidget {
 }
 
 class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
+  static const double _bannerAspectRatio = 16 / 9;
+
   final PageController _pageController = PageController();
   List<_DriverBannerItem> _banners = [];
   bool _isLoading = true;
@@ -730,13 +732,24 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
     }
   }
 
+  double _bannerWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width -
+        (Dimensions.paddingSizeDefault * 2);
+  }
+
+  double _bannerHeight(BuildContext context) {
+    return _bannerWidth(context) / _bannerAspectRatio;
+  }
+
   ImageProvider<Object> _bannerImageProvider(String imageUrl) {
     final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final double bannerWidth = _bannerWidth(context);
+    final double bannerHeight = _bannerHeight(context);
 
     return ResizeImage(
       NetworkImage(imageUrl),
-      width: (MediaQuery.of(context).size.width * devicePixelRatio).round(),
-      height: (176 * devicePixelRatio).round(),
+      width: (bannerWidth * devicePixelRatio).round(),
+      height: (bannerHeight * devicePixelRatio).round(),
     );
   }
 
@@ -817,7 +830,7 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        height: 176,
+        height: _bannerHeight(context),
         margin: const EdgeInsets.fromLTRB(
           Dimensions.paddingSizeDefault,
           0,
@@ -845,7 +858,7 @@ class _DriverHomeBannerCarouselState extends State<DriverHomeBannerCarousel> {
       child: Column(
         children: [
           SizedBox(
-            height: 176,
+            height: _bannerHeight(context),
             child: PageView.builder(
               controller: _pageController,
               itemCount: _banners.length,

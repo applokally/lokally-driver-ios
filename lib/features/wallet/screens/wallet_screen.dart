@@ -65,7 +65,7 @@ class _WalletScreenState extends State<WalletScreen>
         if (tabController.index == 1) {
           Get.find<WalletController>().setPayableTypeIndex(1, notify: false);
         } else if (tabController.index == 2) {
-          Get.find<WalletController>().setPayableTypeIndex(0, notify: false);
+          Get.find<WalletController>().getLokallyBillingOverview();
         } else if (tabController.index == 0) {
           Get.find<WalletController>().setSelectedHistoryIndex(1, false);
         }
@@ -211,10 +211,12 @@ class _WalletScreenState extends State<WalletScreen>
                               tabs: const [
                                 Tab(text: 'Solicitações de saque'),
                                 Tab(text: 'Histórico de dinheiro recebido'),
-                                Tab(text: 'Histórico de dinheiro a pagar'),
+                                Tab(text: 'Pagar à Lokally'),
                               ],
                             ),
-                          if (walletController.walletTypeIndex != 1)
+                          if (walletController.walletTypeIndex != 1 &&
+                              !(walletController.walletTypeIndex == 0 &&
+                                  tabController.index == 2))
                             TransactionCardButtonWidget(
                               tabIndex: tabController.index,
                             ),

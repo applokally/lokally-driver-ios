@@ -1,10 +1,9 @@
-
-
 import 'package:ride_sharing_user_app/features/wallet/domain/repositories/wallet_repository_interface.dart';
 import 'package:ride_sharing_user_app/features/wallet/domain/services/wallet_service_interface.dart';
 
-class WalletService implements WalletServiceInterface{
+class WalletService implements WalletServiceInterface {
   final WalletRepositoryInterface walletRepositoryInterface;
+
   WalletService({required this.walletRepositoryInterface});
 
   @override
@@ -28,8 +27,20 @@ class WalletService implements WalletServiceInterface{
   }
 
   @override
-  Future withdrawBalance(List<String> typeKey, List<String> typeValue, int id, String balance, String note) {
-   return walletRepositoryInterface.withdrawBalance(typeKey, typeValue, id, balance, note);
+  Future withdrawBalance(
+    List<String> typeKey,
+    List<String> typeValue,
+    int id,
+    String balance,
+    String note,
+  ) {
+    return walletRepositoryInterface.withdrawBalance(
+      typeKey,
+      typeValue,
+      id,
+      balance,
+      note,
+    );
   }
 
   @override
@@ -38,13 +49,31 @@ class WalletService implements WalletServiceInterface{
   }
 
   @override
-  Future createWithdrawMethodInfo(List <String> typeKey, List<String> typeValue,int id) {
-    return walletRepositoryInterface.createWithdrawMethodInfo(typeKey, typeValue, id);
+  Future createWithdrawMethodInfo(
+    List<String> typeKey,
+    List<String> typeValue,
+    int id,
+  ) {
+    return walletRepositoryInterface.createWithdrawMethodInfo(
+      typeKey,
+      typeValue,
+      id,
+    );
   }
 
   @override
-  Future updateWithdrawMethodInfo(List <String> typeKey, List<String> typeValue,int methodId,String methodInfoId) {
-    return walletRepositoryInterface.updateWithdrawMethodInfo(typeKey, typeValue, methodId,methodInfoId);
+  Future updateWithdrawMethodInfo(
+    List<String> typeKey,
+    List<String> typeValue,
+    int methodId,
+    String methodInfoId,
+  ) {
+    return walletRepositoryInterface.updateWithdrawMethodInfo(
+      typeKey,
+      typeValue,
+      methodId,
+      methodInfoId,
+    );
   }
 
   @override
@@ -54,7 +83,7 @@ class WalletService implements WalletServiceInterface{
 
   @override
   Future getIncomeStatement(int offset) {
-   return walletRepositoryInterface.getIncomeStatement(offset);
+    return walletRepositoryInterface.getIncomeStatement(offset);
   }
 
   @override
@@ -83,8 +112,23 @@ class WalletService implements WalletServiceInterface{
   }
 
   @override
-  Future getPaymentGetWayList() async{
+  Future getPaymentGetWayList() async {
     return await walletRepositoryInterface.getPaymentGetWayList();
   }
 
+  @override
+  Future<dynamic> getLokallyBillingOverview() {
+    return walletRepositoryInterface.getLokallyBillingOverview();
+  }
+
+  @override
+  Future<dynamic> generateWeeklyCommissionBillingPix(String billingId) {
+    return walletRepositoryInterface
+        .generateWeeklyCommissionBillingPix(billingId);
+  }
+
+  @override
+  Future<dynamic> generateMonthlyBillingPix(String billingId) {
+    return walletRepositoryInterface.generateMonthlyBillingPix(billingId);
+  }
 }
